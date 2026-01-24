@@ -425,6 +425,14 @@ export default function Repairs() {
                       )}
                     </div>
                     
+                    {repair.sub_status && (
+                      <div className="mt-2">
+                        <Badge className={cn(SUB_STATUS_CONFIG[repair.sub_status].color, "border-0 text-xs")}>
+                          {SUB_STATUS_CONFIG[repair.sub_status].label}
+                        </Badge>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
                       {repair.estimated_cost && (
                         <span>עלות משוערת: ₪{repair.estimated_cost}</span>

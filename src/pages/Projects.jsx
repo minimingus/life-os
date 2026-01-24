@@ -506,9 +506,9 @@ export default function Projects() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-lg text-slate-800">{project.title}</h3>
                             <Badge className={cn(typeConfig.color, "border-0")}>{typeConfig.label}</Badge>
-                            {project.type === "personal" && project.family_member_name && (
+                            {project.family_member_name && (
                               <Badge variant="outline" className="border-violet-200 text-violet-700">
-                                {project.family_member_name}
+                                אחראי: {project.family_member_name}
                               </Badge>
                             )}
                             <Badge className={cn(statusConfig.color, "border-0")}>{statusConfig.label}</Badge>
@@ -617,9 +617,7 @@ export default function Projects() {
                 value={formData.type}
                 onValueChange={(v) => setFormData({ 
                   ...formData, 
-                  type: v,
-                  family_member_id: v === "family" ? "" : formData.family_member_id,
-                  family_member_name: v === "family" ? "" : formData.family_member_name
+                  type: v
                 })}
               >
                 <SelectTrigger className="mt-1">
@@ -633,9 +631,9 @@ export default function Projects() {
               </Select>
             </div>
 
-            {formData.type === "personal" && familyMembers.length > 0 && (
+            {familyMembers.length > 0 && (
               <div>
-                <label className="text-sm font-medium text-slate-700">בן משפחה</label>
+                <label className="text-sm font-medium text-slate-700">אחראי</label>
                 <Select
                   value={formData.family_member_id}
                   onValueChange={(v) => {
@@ -648,9 +646,10 @@ export default function Projects() {
                   }}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="בחר בן משפחה" />
+                    <SelectValue placeholder="בחר אחראי" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={null}>ללא אחראי</SelectItem>
                     {familyMembers.map(member => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name}

@@ -129,7 +129,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="p-4 border-t border-slate-100">
             <div className="px-4 py-3 rounded-xl bg-gradient-to-l from-blue-50 to-indigo-50">
               <p className="text-xs text-slate-500">משפחת</p>
-              <p className="text-sm font-semibold text-slate-700">כהן 👨‍👩‍👧‍👦</p>
+              <p className="text-sm font-semibold text-slate-700">אברמוביץ 👨‍👩‍👧‍👦</p>
             </div>
           </div>
         </div>

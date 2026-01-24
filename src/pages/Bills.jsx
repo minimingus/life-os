@@ -104,6 +104,16 @@ export default function Bills() {
     family_member_name: ""
   });
 
+  const [reportFormData, setReportFormData] = useState({
+    title: "",
+    description: "",
+    period: format(new Date(), "MMMM yyyy", { locale: he }),
+    total_amount: "",
+    notes: "",
+    file_url: "",
+    created_date: format(new Date(), "yyyy-MM-dd")
+  });
+
   const queryClient = useQueryClient();
 
   const { data: bills = [], isLoading } = useQuery({

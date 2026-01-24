@@ -390,11 +390,7 @@ export default function Repairs() {
                       )}
                     </div>
                     </div>
-                    
-                    {repair.description && (
-                      <p className="text-sm text-slate-600 mt-3 line-clamp-2">{repair.description}</p>
-                    )}
-                    
+
                     <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
                       {repair.estimated_cost && (
                         <span>עלות משוערת: ₪{repair.estimated_cost}</span>

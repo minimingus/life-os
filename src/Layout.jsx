@@ -30,6 +30,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "חשבונות", href: createPageUrl("Bills"), icon: Receipt, page: "Bills" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },
     { name: "לוז משפחתי", href: createPageUrl("FamilyRoutine"), icon: Clock, page: "FamilyRoutine" },
+    { name: "מערכת שעות", href: createPageUrl("SchoolSchedule"), icon: Calendar, page: "SchoolSchedule" },
     { name: "בני המשפחה", href: createPageUrl("Family"), icon: Users, page: "Family" },
   ];
 

@@ -236,6 +236,20 @@ export default function Bills() {
     });
   };
 
+  const resetReportForm = () => {
+    setShowReportDialog(false);
+    setEditReport(null);
+    setReportFormData({
+      title: "",
+      description: "",
+      period: format(new Date(), "MMMM yyyy", { locale: he }),
+      total_amount: "",
+      notes: "",
+      file_url: "",
+      created_date: format(new Date(), "yyyy-MM-dd")
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = {

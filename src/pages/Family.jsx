@@ -20,11 +20,16 @@ import {
 } from "@/components/ui/select";
 import { 
   Users, 
-  Trash2,
   User,
   Baby,
   Upload,
-  Calendar
+  Calendar,
+  FolderKanban,
+  ListTodo,
+  CalendarDays,
+  Clock,
+  GraduationCap,
+  Dumbbell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInYears } from "date-fns";
@@ -42,6 +47,8 @@ const COLORS = [
 
 export default function Family() {
   const [showDialog, setShowDialog] = useState(false);
+  const [showMemberView, setShowMemberView] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -74,10 +81,7 @@ export default function Family() {
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.FamilyMember.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["family"] })
-  });
+
 
   const resetForm = () => {
     setShowDialog(false);
@@ -123,6 +127,36 @@ export default function Family() {
   const getAge = (birthDate) => {
     if (!birthDate) return null;
     return differenceInYears(new Date(), parseISO(birthDate));
+  };
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => base44.entities.Project.list()
+  });
+
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["routineTasks"],
+    queryFn: () => base44.entities.RoutineTask.list()
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ["calendarEvents"],
+    queryFn: () => base44.entities.CalendarEvent.list()
+  });
+
+  const { data: scheduleItems = [] } = useQuery({
+    queryKey: ["schoolSchedule"],
+    queryFn: () => base44.entities.SchoolSchedule.list()
+  });
+
+  const { data: activities = [] } = useQuery({
+    queryKey: ["extracurricular"],
+    queryFn: () => base44.entities.Extracurricular.list()
+  });
+
+  const openMemberView = (member) => {
+    setSelectedMember(member);
+    setShowMemberView(true);
   };
 
   const parents = members.filter(m => m.role === "parent");
@@ -291,17 +325,172 @@ export default function Family() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Member View Dialog */}
+      <Dialog open={showMemberView} onOpenChange={setShowMemberView}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <div className="flex items-center gap-4">
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden shadow-lg"
+                style={{ backgroundColor: selectedMember?.color || "#3b82f6" }}
+              >
+                {selectedMember?.avatar ? (
+                  <img src={selectedMember.avatar} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold text-white">
+                    {selectedMember?.name?.[0]?.toUpperCase() || "?"}
+                  </span>
+                )}
+              </div>
+              <div>
+                <DialogTitle className="text-2xl">{selectedMember?.name}</DialogTitle>
+                <p className="text-sm text-slate-500 mt-1">
+                  {selectedMember?.role === "parent" ? "הורה" : "ילד/ה"}
+                  {selectedMember?.birth_date && ` • גיל ${getAge(selectedMember.birth_date)}`}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {selectedMember && (
+            <div className="space-y-6 mt-4">
+              {/* Projects */}
+              {(() => {
+                const memberProjects = projects.filter(p => p.family_member_id === selectedMember.id);
+                return memberProjects.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-800 mb-3">
+                      <FolderKanban className="w-5 h-5" />
+                      פרויקטים ({memberProjects.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {memberProjects.map(project => (
+                        <div key={project.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-slate-800">{project.title}</p>
+                              {project.description && (
+                                <p className="text-sm text-slate-600 mt-1">{project.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Routine Tasks */}
+              {(() => {
+                const memberTasks = tasks.filter(t => t.family_member_id === selectedMember.id);
+                return memberTasks.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-800 mb-3">
+                      <Clock className="w-5 h-5" />
+                      משימות בלוז ({memberTasks.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {memberTasks.map(task => (
+                        <div key={task.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <p className="font-medium text-slate-800">{task.title}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {task.start_time} {task.end_time && `- ${task.end_time}`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Calendar Events */}
+              {(() => {
+                const memberEvents = events.filter(e => e.family_member_id === selectedMember.id);
+                return memberEvents.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-800 mb-3">
+                      <CalendarDays className="w-5 h-5" />
+                      אירועים ({memberEvents.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {memberEvents.slice(0, 5).map(event => (
+                        <div key={event.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <p className="font-medium text-slate-800">{event.title}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {event.date && format(parseISO(event.date), "dd/MM/yyyy")}
+                            {event.start_time && ` • ${event.start_time}`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* School Schedule */}
+              {(() => {
+                const memberSchedule = scheduleItems.filter(s => s.family_member_id === selectedMember.id);
+                return memberSchedule.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-800 mb-3">
+                      <GraduationCap className="w-5 h-5" />
+                      מערכת שעות ({memberSchedule.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {memberSchedule.slice(0, 5).map(item => (
+                        <div key={item.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <p className="font-medium text-slate-800">{item.subject}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {item.teacher && `${item.teacher} • `}
+                            {item.start_time} - {item.end_time}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Extracurricular Activities */}
+              {(() => {
+                const memberActivities = activities.filter(a => a.family_member_id === selectedMember.id);
+                return memberActivities.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-800 mb-3">
+                      <Dumbbell className="w-5 h-5" />
+                      חוגים ({memberActivities.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {memberActivities.map(activity => (
+                        <div key={activity.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <p className="font-medium text-slate-800">{activity.activity_name}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {activity.location && `${activity.location} • `}
+                            {activity.start_time} - {activity.end_time}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function MemberCard({ member, onEdit, onDelete, getAge }) {
+function MemberCard({ member, onEdit, onView, getAge }) {
   const age = getAge(member.birth_date);
   
   return (
     <div 
       className="bg-white rounded-2xl border border-slate-100 p-5 hover:shadow-lg transition-all cursor-pointer"
-      onClick={() => onEdit(member)}
+      onClick={() => onView(member)}
     >
       <div className="flex items-center gap-4">
         <div 
@@ -332,15 +521,15 @@ function MemberCard({ member, onEdit, onDelete, getAge }) {
         </div>
 
         <Button
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(member.id);
+            onEdit(member);
           }}
-          className="text-slate-400 hover:text-rose-500 flex-shrink-0"
+          className="text-slate-600 hover:text-blue-600 flex-shrink-0"
         >
-          <Trash2 className="w-4 h-4" />
+          עריכה
         </Button>
       </div>
     </div>

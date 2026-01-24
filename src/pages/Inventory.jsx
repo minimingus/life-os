@@ -520,7 +520,7 @@ export default function Inventory() {
                         </Badge>
                       )}
                       {item.status === "out_of_stock" && (
-                        <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white text-xs animate-pulse shadow-lg shadow-red-500/50">
+                        <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white text-xs shadow-lg shadow-red-500/50">
                           🚨 נגמר!
                         </Badge>
                       )}

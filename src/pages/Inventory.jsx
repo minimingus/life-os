@@ -348,6 +348,16 @@ export default function Inventory() {
 
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => markAsFinished(item)}
+                      className="h-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+                      title="נגמר - הוסף לקניות"
+                    >
+                      <X className="w-4 h-4 ml-1" />
+                      נגמר
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => addToShoppingList(item)}

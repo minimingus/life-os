@@ -194,7 +194,7 @@ export default function Family() {
                     key={member.id} 
                     member={member} 
                     onEdit={openEdit}
-                    onDelete={(id) => deleteMutation.mutate(id)}
+                    onView={openMemberView}
                     getAge={getAge}
                   />
                 ))}
@@ -215,7 +215,7 @@ export default function Family() {
                     key={member.id} 
                     member={member} 
                     onEdit={openEdit}
-                    onDelete={(id) => deleteMutation.mutate(id)}
+                    onView={openMemberView}
                     getAge={getAge}
                   />
                 ))}

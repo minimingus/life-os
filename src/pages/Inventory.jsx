@@ -467,6 +467,11 @@ export default function Inventory() {
                       {item.is_staple && (
                         <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                       )}
+                      {item.status === "out_of_stock" && (
+                        <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white text-xs animate-pulse shadow-lg shadow-red-500/50">
+                          🚨 נגמר!
+                        </Badge>
+                      )}
                       {item.status === "expired" && (
                         <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
                       )}

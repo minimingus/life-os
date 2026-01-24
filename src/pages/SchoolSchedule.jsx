@@ -328,13 +328,13 @@ export default function SchoolSchedule() {
             <thead>
               <tr className="bg-gradient-to-l from-blue-50 to-indigo-50">
                 <th className="border border-slate-200 p-3 text-sm font-semibold text-slate-700 w-20">
-                  שיעור
-                </th>
-                {DAYS.map((day, idx) => (
-                  <th key={idx} className="border border-slate-200 p-3 text-sm font-semibold text-slate-700">
-                    {day}
-                  </th>
-                ))}
+                   שיעור
+                 </th>
+                 {(selectedDay === null ? DAYS.map((_, idx) => idx) : [selectedDay]).map((idx) => (
+                   <th key={idx} className="border border-slate-200 p-3 text-sm font-semibold text-slate-700">
+                     {DAYS[idx]}
+                   </th>
+                 ))}
               </tr>
             </thead>
             <tbody>

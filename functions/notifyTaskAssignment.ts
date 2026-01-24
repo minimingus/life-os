@@ -9,25 +9,29 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { task_id, event_type } = await req.json();
+    const body = await req.json();
+    const task_id = body.event?.entity_id || body.task_id;
+    const event_type = body.event?.type || body.event_type || 'created';
     
     if (!task_id) {
-      return Response.json({ error: 'Missing task_id' }, { status: 400 });
+      return Response.json({ error: 'Missing task_id', body }, { status: 400 });
     }
 
-    // Get the task
-    const tasks = await base44.entities.Task.filter({ id: task_id });
-    const task = tasks[0];
+    // Get the task by listing and filtering (filter by id doesn't work reliably)
+    const allTasks = await base44.entities.Task.list();
+    const task = allTasks.find(t => t.id === task_id);
     
-    if (!task || !task.assigned_to_id) {
+    if (!task) {
+      return Response.json({ error: `Task ${task_id} not found`, available_tasks: allTasks.length }, { status: 404 });
+    }
+
+    if (!task.assigned_to_id) {
       return Response.json({ action: 'skipped', reason: 'no_assignment' });
     }
 
     // Get the assigned family member
-    const members = await base44.entities.FamilyMember.filter({ 
-      id: task.assigned_to_id 
-    });
-    const member = members[0];
+    const allMembers = await base44.entities.FamilyMember.list();
+    const member = allMembers.find(m => m.id === task.assigned_to_id);
 
     if (!member || member.notification_preference === 'none') {
       return Response.json({ action: 'skipped', reason: 'no_notification_enabled' });

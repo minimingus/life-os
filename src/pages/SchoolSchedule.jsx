@@ -28,7 +28,7 @@ import { BookOpen, Plus, Edit, Trash2, Clock, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
-const PERIODS = 8; // מספר השיעורים המקסימלי ביום
+const PERIODS = 6; // מספר השיעורים המקסימלי ביום
 
 const SUBJECT_COLORS = {
   "עברית": "bg-blue-100 text-blue-700 border-blue-200",

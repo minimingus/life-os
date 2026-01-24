@@ -53,6 +53,8 @@ export default function Repairs() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterLocation, setFilterLocation] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -146,12 +148,37 @@ export default function Repairs() {
     }
   };
 
-  const filteredRepairs = filterStatus === "all"
-    ? repairs
-    : repairs.filter(r => r.status === filterStatus);
+  let filteredRepairs = repairs;
+  if (filterStatus !== "all") {
+    filteredRepairs = filteredRepairs.filter(r => r.status === filterStatus);
+  }
+  if (filterLocation !== "all") {
+    filteredRepairs = filteredRepairs.filter(r => r.location === filterLocation);
+  }
+  if (filterPriority !== "all") {
+    filteredRepairs = filteredRepairs.filter(r => r.priority === filterPriority);
+  }
+
+  const uniqueLocations = [...new Set(repairs.map(r => r.location).filter(Boolean))];
 
   const activeRepairs = repairs.filter(r => r.status !== "completed");
   const urgentCount = repairs.filter(r => r.priority === "urgent" && r.status !== "completed").length;
+
+  const getCostColor = (cost) => {
+    if (!cost) return null;
+    if (cost <= 100) return "border-r-4 border-green-500";
+    if (cost <= 500) return "border-r-4 border-yellow-500";
+    if (cost <= 1000) return "border-r-4 border-orange-500";
+    return "border-r-4 border-rose-500";
+  };
+
+  const getCostBadge = (cost) => {
+    if (!cost) return null;
+    if (cost <= 100) return { label: "עד 100₪", color: "bg-green-100 text-green-600" };
+    if (cost <= 500) return { label: "100-500₪", color: "bg-yellow-100 text-yellow-600" };
+    if (cost <= 1000) return { label: "500-1000₪", color: "bg-orange-100 text-orange-600" };
+    return { label: "מעל 1000₪", color: "bg-rose-100 text-rose-600" };
+  };
 
   return (
     <div className="space-y-6">
@@ -170,28 +197,76 @@ export default function Repairs() {
         </div>
       )}
 
-      {/* Status Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={filterStatus === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterStatus("all")}
-          className={filterStatus === "all" ? "bg-blue-500" : ""}
-        >
-          הכל ({repairs.length})
-        </Button>
-        {Object.entries(STATUS_CONFIG).map(([key, { label, icon: Icon }]) => (
+      {/* Filters */}
+      <div className="space-y-3">
+        {/* Status Filters */}
+        <div className="flex flex-wrap gap-2">
           <Button
-            key={key}
-            variant={filterStatus === key ? "default" : "outline"}
+            variant={filterStatus === "all" ? "default" : "outline"}
             size="sm"
-            onClick={() => setFilterStatus(key)}
-            className={filterStatus === key ? "bg-blue-500" : ""}
+            onClick={() => setFilterStatus("all")}
+            className={filterStatus === "all" ? "bg-blue-500" : ""}
           >
-            <Icon className="w-4 h-4 ml-1" />
-            {label} ({repairs.filter(r => r.status === key).length})
+            הכל ({repairs.length})
           </Button>
-        ))}
+          {Object.entries(STATUS_CONFIG).map(([key, { label, icon: Icon }]) => (
+            <Button
+              key={key}
+              variant={filterStatus === key ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterStatus(key)}
+              className={filterStatus === key ? "bg-blue-500" : ""}
+            >
+              <Icon className="w-4 h-4 ml-1" />
+              {label} ({repairs.filter(r => r.status === key).length})
+            </Button>
+          ))}
+        </div>
+
+        {/* Priority & Location Filters */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-sm text-slate-600">סינון:</span>
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="w-32 h-9">
+              <SelectValue placeholder="עדיפות" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל העדיפויות</SelectItem>
+              {Object.entries(PRIORITY_CONFIG).map(([key, { label }]) => (
+                <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {uniqueLocations.length > 0 && (
+            <Select value={filterLocation} onValueChange={setFilterLocation}>
+              <SelectTrigger className="w-40 h-9">
+                <SelectValue placeholder="מיקום" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל המיקומים</SelectItem>
+                {uniqueLocations.map(location => (
+                  <SelectItem key={location} value={location}>{location}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {(filterStatus !== "all" || filterPriority !== "all" || filterLocation !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterStatus("all");
+                setFilterPriority("all");
+                setFilterLocation("all");
+              }}
+              className="text-slate-500"
+            >
+              נקה סינון
+            </Button>
+          )}
+        </div>
       </div>
 
       {repairs.length === 0 && !isLoading ? (
@@ -208,6 +283,8 @@ export default function Repairs() {
             const statusConfig = STATUS_CONFIG[repair.status] || STATUS_CONFIG.pending;
             const priorityConfig = PRIORITY_CONFIG[repair.priority] || PRIORITY_CONFIG.medium;
             const StatusIcon = statusConfig.icon;
+            const costColor = getCostColor(repair.estimated_cost);
+            const costBadge = getCostBadge(repair.estimated_cost);
             
             return (
               <div 
@@ -216,7 +293,8 @@ export default function Repairs() {
                   "bg-white rounded-2xl border p-5 hover:shadow-lg transition-all cursor-pointer",
                   repair.priority === "urgent" && repair.status !== "completed" 
                     ? "border-rose-200 shadow-rose-100" 
-                    : "border-slate-100"
+                    : "border-slate-100",
+                  costColor
                 )}
                 onClick={() => openEdit(repair)}
               >
@@ -246,6 +324,11 @@ export default function Repairs() {
                         <Badge className={cn(statusConfig.color, "border-0")}>
                           {statusConfig.label}
                         </Badge>
+                        {costBadge && (
+                          <Badge className={cn(costBadge.color, "border-0")}>
+                            {costBadge.label}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     

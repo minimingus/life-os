@@ -498,7 +498,7 @@ export default function Inventory() {
                 key={item.id}
                 className={cn(
                   "rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer",
-                  item.status === "out_of_stock" ? "bg-gradient-to-br from-red-50 to-red-100 border-red-400 shadow-red-200 animate-pulse" :
+                  item.status === "out_of_stock" ? "bg-gradient-to-br from-red-50 to-red-100 border-red-400 shadow-red-200" :
                   item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
                   item.status === "low" ? "border-amber-200 bg-amber-50/50" :
                   "bg-white border-slate-100"

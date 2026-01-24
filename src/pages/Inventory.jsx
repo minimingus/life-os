@@ -357,7 +357,10 @@ export default function Inventory() {
   }
 
   if (showMissingOnly) {
-    filteredItems = filteredItems.filter(i => i.status === "low" || i.status === "out_of_stock");
+    filteredItems = filteredItems.filter(i => 
+      i.status === "out_of_stock" || 
+      (i.status === "low" && (i.min_quantity || 0) > 1)
+    );
   }
 
   // Apply active filter from badges
@@ -383,6 +386,10 @@ export default function Inventory() {
   const expiredCount = items.filter(i => i.status === "expired").length;
   const lowCount = items.filter(i => i.status === "low").length;
   const outOfStockCount = items.filter(i => i.status === "out_of_stock").length;
+  const missingCount = items.filter(i => 
+    i.status === "out_of_stock" || 
+    (i.status === "low" && (i.min_quantity || 0) > 1)
+  ).length;
   const stapleCount = items.filter(i => i.is_staple).length;
   const lowStapleCount = items.filter(i => i.is_staple && (i.status === "low" || i.status === "out_of_stock")).length;
 
@@ -516,7 +523,7 @@ export default function Inventory() {
           className={showMissingOnly ? "bg-red-500 hover:bg-red-600" : "border-red-200 text-red-600 hover:bg-red-50"}
         >
           <AlertTriangle className="w-4 h-4 ml-1" />
-          חוסרים ({lowCount + outOfStockCount})
+          חוסרים ({missingCount})
         </Button>
       </div>
 

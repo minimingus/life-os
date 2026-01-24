@@ -725,7 +725,15 @@ export default function Bills() {
             </Button>
           </div>
 
-          {reports.length > 0 && (
+          {reports.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="אין דוחות"
+              description="כל הדוחות הכספיים יופיעו כאן"
+              action={() => setShowReportDialog(true)}
+              actionLabel="הוסף דוח"
+            />
+          ) : (
             <div className="grid gap-3">
               {reports.map(report => (
                 <div key={report.id} className="bg-white rounded-2xl border border-slate-100 p-5 hover:shadow-md transition-all cursor-pointer" onClick={() => openEditReport(report)}>

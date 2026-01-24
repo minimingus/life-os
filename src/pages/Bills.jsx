@@ -770,7 +770,7 @@ export default function Bills() {
                 {reports.length === 0 ? null : (
                 <div className="grid gap-4">
             <div className="bg-white rounded-2xl border border-slate-100 p-6">
-              <h3 className="font-semibold text-slate-800 mb-4">סיכום חודשי</h3>
+                <h3 className="font-semibold text-slate-800 mb-4">סיכום חודשי</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-blue-50 rounded-xl">
                   <p className="text-sm text-slate-600">סה"כ שולם החודש</p>

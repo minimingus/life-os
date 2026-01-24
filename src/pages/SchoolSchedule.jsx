@@ -18,7 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookOpen, Plus, Edit, Trash2, Clock } from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { BookOpen, Plus, Edit, Trash2, Clock, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
@@ -41,6 +47,7 @@ export default function SchoolSchedule() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [activeTab, setActiveTab] = useState("schedule");
   const [formData, setFormData] = useState({
     family_member_id: "",
     family_member_name: "",
@@ -53,12 +60,29 @@ export default function SchoolSchedule() {
     end_time: "",
     notes: ""
   });
+  const [activityFormData, setActivityFormData] = useState({
+    family_member_id: "",
+    family_member_name: "",
+    day: 0,
+    activity_name: "",
+    location: "",
+    start_time: "",
+    end_time: "",
+    instructor: "",
+    color: "#3b82f6",
+    notes: ""
+  });
 
   const queryClient = useQueryClient();
 
   const { data: scheduleItems = [] } = useQuery({
     queryKey: ["schoolSchedule"],
     queryFn: () => base44.entities.SchoolSchedule.list()
+  });
+
+  const { data: activities = [] } = useQuery({
+    queryKey: ["extracurricular"],
+    queryFn: () => base44.entities.Extracurricular.list()
   });
 
   const { data: familyMembers = [] } = useQuery({
@@ -87,6 +111,27 @@ export default function SchoolSchedule() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schoolSchedule"] })
   });
 
+  const createActivityMutation = useMutation({
+    mutationFn: (data) => base44.entities.Extracurricular.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["extracurricular"] });
+      resetForm();
+    }
+  });
+
+  const updateActivityMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Extracurricular.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["extracurricular"] });
+      resetForm();
+    }
+  });
+
+  const deleteActivityMutation = useMutation({
+    mutationFn: (id) => base44.entities.Extracurricular.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["extracurricular"] })
+  });
+
   const resetForm = () => {
     setShowDialog(false);
     setEditItem(null);
@@ -102,20 +147,44 @@ export default function SchoolSchedule() {
       end_time: "",
       notes: ""
     });
+    setActivityFormData({
+      family_member_id: "",
+      family_member_name: "",
+      day: 0,
+      activity_name: "",
+      location: "",
+      start_time: "",
+      end_time: "",
+      instructor: "",
+      color: "#3b82f6",
+      notes: ""
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (editItem) {
-      updateMutation.mutate({ id: editItem.id, data: formData });
+    if (activeTab === "schedule") {
+      if (editItem) {
+        updateMutation.mutate({ id: editItem.id, data: formData });
+      } else {
+        createMutation.mutate(formData);
+      }
     } else {
-      createMutation.mutate(formData);
+      if (editItem) {
+        updateActivityMutation.mutate({ id: editItem.id, data: activityFormData });
+      } else {
+        createActivityMutation.mutate(activityFormData);
+      }
     }
   };
 
-  const openEdit = (item) => {
+  const openEdit = (item, isActivity = false) => {
     setEditItem(item);
-    setFormData(item);
+    if (isActivity) {
+      setActivityFormData(item);
+    } else {
+      setFormData(item);
+    }
     setShowDialog(true);
   };
 
@@ -138,6 +207,13 @@ export default function SchoolSchedule() {
       )
     : scheduleItems;
 
+  const filteredActivities = selectedMember
+    ? activities.filter(item => 
+        item.family_member_id === selectedMember || 
+        item.family_member_name === familyMembers.find(m => m.id === selectedMember)?.name
+      )
+    : activities;
+
   // ארגון מערכת השעות לפי יום ושיעור
   const getScheduleItem = (day, period) => {
     return filteredSchedule.find(item => item.day === day && item.period_number === period);
@@ -155,20 +231,28 @@ export default function SchoolSchedule() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="מערכת שעות"
+        title="מערכת שעות וחוגים"
         subtitle={selectedMember 
-          ? `מערכת השעות של ${familyMembers.find(m => m.id === selectedMember)?.name || ''}`
-          : "בחר ילד כדי להציג את מערכת השעות שלו"
+          ? `מערכת של ${familyMembers.find(m => m.id === selectedMember)?.name || ''}`
+          : "בחר ילד כדי להציג את המערכת שלו"
         }
         action={() => {
-          setFormData({
-            ...formData,
-            family_member_id: selectedMember || "",
-            family_member_name: familyMembers.find(m => m.id === selectedMember)?.name || ""
-          });
+          if (activeTab === "schedule") {
+            setFormData({
+              ...formData,
+              family_member_id: selectedMember || "",
+              family_member_name: familyMembers.find(m => m.id === selectedMember)?.name || ""
+            });
+          } else {
+            setActivityFormData({
+              ...activityFormData,
+              family_member_id: selectedMember || "",
+              family_member_name: familyMembers.find(m => m.id === selectedMember)?.name || ""
+            });
+          }
           setShowDialog(true);
         }}
-        actionLabel="הוסף שיעור"
+        actionLabel={activeTab === "schedule" ? "הוסף שיעור" : "הוסף חוג"}
       >
         {children.length > 0 && (
           <Select value={selectedMember || "none"} onValueChange={(v) => setSelectedMember(v === "none" ? null : v)}>
@@ -187,18 +271,31 @@ export default function SchoolSchedule() {
         )}
       </PageHeader>
 
-      {/* לוח מערכת השעות */}
+      {/* Tabs */}
       {!selectedMember ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
           <div className="text-slate-400 mb-2">
             <BookOpen className="w-12 h-12 mx-auto mb-3" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-700 mb-2">בחר ילד להצגת מערכת השעות</h3>
-          <p className="text-slate-500">כל ילד במשפחה מנהל מערכת שעות נפרדת משלו</p>
+          <h3 className="text-lg font-semibold text-slate-700 mb-2">בחר ילד להצגת מערכת השעות והחוגים</h3>
+          <p className="text-slate-500">כל ילד במשפחה מנהל מערכת שעות וחוגים נפרדת משלו</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="schedule" className="gap-2">
+              <BookOpen className="w-4 h-4" />
+              מערכת שעות
+            </TabsTrigger>
+            <TabsTrigger value="activities" className="gap-2">
+              <Dumbbell className="w-4 h-4" />
+              חוגים
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="schedule" className="mt-0">
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
           <table className="w-full border-collapse" dir="rtl">
             <thead>
               <tr className="bg-gradient-to-l from-blue-50 to-indigo-50">
@@ -263,6 +360,70 @@ export default function SchoolSchedule() {
           </table>
         </div>
       </div>
+          </TabsContent>
+
+          <TabsContent value="activities" className="mt-0">
+            <div className="space-y-4">
+              {DAYS.map((day, dayIdx) => {
+                const dayActivities = filteredActivities.filter(a => a.day === dayIdx);
+                return dayActivities.length > 0 ? (
+                  <div key={dayIdx} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-l from-blue-50 to-indigo-50 px-4 py-3 border-b border-slate-200">
+                      <h3 className="font-semibold text-slate-700">יום {day}</h3>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {dayActivities
+                        .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""))
+                        .map(activity => (
+                          <div
+                            key={activity.id}
+                            className="flex items-center gap-4 p-4 rounded-xl border-2 hover:shadow-md transition-all cursor-pointer"
+                            style={{ borderColor: activity.color || "#3b82f6", backgroundColor: `${activity.color || "#3b82f6"}10` }}
+                            onClick={() => openEdit(activity, true)}
+                          >
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: activity.color || "#3b82f6" }}>
+                              <Dumbbell className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-semibold text-slate-800">{activity.activity_name}</div>
+                              <div className="text-sm text-slate-600 flex items-center gap-3 mt-1">
+                                {activity.start_time && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {activity.start_time} - {activity.end_time}
+                                  </span>
+                                )}
+                                {activity.location && <span>📍 {activity.location}</span>}
+                                {activity.instructor && <span>👤 {activity.instructor}</span>}
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteActivityMutation.mutate(activity.id);
+                              }}
+                              className="text-slate-400 hover:text-rose-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ) : null;
+              })}
+              {filteredActivities.length === 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                  <Dumbbell className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+                  <h3 className="text-lg font-semibold text-slate-700 mb-2">אין חוגים עדיין</h3>
+                  <p className="text-slate-500">הוסף חוגים ופעילויות חוץ בית ספריות</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* מקרא */}
@@ -281,9 +442,147 @@ export default function SchoolSchedule() {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle>{editItem ? "עריכת שיעור" : "הוספת שיעור"}</DialogTitle>
+            <DialogTitle>
+              {activeTab === "schedule" 
+                ? (editItem ? "עריכת שיעור" : "הוספת שיעור")
+                : (editItem ? "עריכת חוג" : "הוספת חוג")}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {activeTab === "activities" ? (
+              <>
+                {children.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">ילד</label>
+                    <Select
+                      value={activityFormData.family_member_id}
+                      onValueChange={(v) => {
+                        const member = familyMembers.find(m => m.id === v);
+                        setActivityFormData({
+                          ...activityFormData,
+                          family_member_id: v,
+                          family_member_name: member?.name || ""
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="בחר ילד" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {children.map(child => (
+                          <SelectItem key={child.id} value={child.id}>
+                            {child.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">שם החוג</label>
+                  <Input
+                    value={activityFormData.activity_name}
+                    onChange={(e) => setActivityFormData({ ...activityFormData, activity_name: e.target.value })}
+                    placeholder="למשל: כדורגל"
+                    className="mt-1"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">יום</label>
+                  <Select
+                    value={activityFormData.day.toString()}
+                    onValueChange={(v) => setActivityFormData({ ...activityFormData, day: parseInt(v) })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DAYS.map((day, idx) => (
+                        <SelectItem key={idx} value={idx.toString()}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">שעת התחלה</label>
+                    <Input
+                      type="time"
+                      value={activityFormData.start_time}
+                      onChange={(e) => setActivityFormData({ ...activityFormData, start_time: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">שעת סיום</label>
+                    <Input
+                      type="time"
+                      value={activityFormData.end_time}
+                      onChange={(e) => setActivityFormData({ ...activityFormData, end_time: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">מיקום</label>
+                  <Input
+                    value={activityFormData.location}
+                    onChange={(e) => setActivityFormData({ ...activityFormData, location: e.target.value })}
+                    placeholder="מיקום החוג"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">מדריך/ה</label>
+                  <Input
+                    value={activityFormData.instructor}
+                    onChange={(e) => setActivityFormData({ ...activityFormData, instructor: e.target.value })}
+                    placeholder="שם המדריך/ה"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">צבע</label>
+                  <Input
+                    type="color"
+                    value={activityFormData.color}
+                    onChange={(e) => setActivityFormData({ ...activityFormData, color: e.target.value })}
+                    className="mt-1 h-10"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600">
+                    {editItem ? "עדכן" : "הוסף"}
+                  </Button>
+                  {editItem && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => {
+                        deleteActivityMutation.mutate(editItem.id);
+                        resetForm();
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    ביטול
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
             {children.length > 0 && (
               <div>
                 <label className="text-sm font-medium text-slate-700">ילד</label>
@@ -417,6 +716,7 @@ export default function SchoolSchedule() {
                 ביטול
               </Button>
             </div>
+            )}
           </form>
         </DialogContent>
       </Dialog>

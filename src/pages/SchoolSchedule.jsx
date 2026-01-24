@@ -48,6 +48,7 @@ export default function SchoolSchedule() {
   const [editItem, setEditItem] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
   const [activeTab, setActiveTab] = useState("schedule");
+  const [selectedDay, setSelectedDay] = useState(null);
   const [formData, setFormData] = useState({
     family_member_id: "",
     family_member_name: "",

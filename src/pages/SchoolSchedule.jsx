@@ -343,12 +343,12 @@ export default function SchoolSchedule() {
                 return (
                   <tr key={period}>
                     <td className="border border-slate-200 p-2 text-center bg-slate-50 font-medium text-slate-600">
-                      {period}
-                    </td>
-                    {DAYS.map((_, dayIdx) => {
-                      const item = getScheduleItem(dayIdx, period);
-                      return (
-                        <td key={dayIdx} className="border border-slate-200 p-1 min-w-[120px] h-20">
+                       {period}
+                     </td>
+                     {(selectedDay === null ? DAYS.map((_, idx) => idx) : [selectedDay]).map((dayIdx) => {
+                       const item = getScheduleItem(dayIdx, period);
+                       return (
+                         <td key={dayIdx} className="border border-slate-200 p-1 min-w-[120px] h-20">
                           {item ? (
                             <div
                               className={cn(

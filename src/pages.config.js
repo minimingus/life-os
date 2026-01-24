@@ -1,13 +1,13 @@
 import Bills from './pages/Bills';
 import Family from './pages/Family';
 import FamilyCalendar from './pages/FamilyCalendar';
+import FamilyRoutine from './pages/FamilyRoutine';
 import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Projects from './pages/Projects';
 import Repairs from './pages/Repairs';
-import Shopping from './pages/Shopping';
-import FamilyRoutine from './pages/FamilyRoutine';
 import SchoolSchedule from './pages/SchoolSchedule';
+import Shopping from './pages/Shopping';
 import __Layout from './Layout.jsx';
 
 
@@ -15,13 +15,13 @@ export const PAGES = {
     "Bills": Bills,
     "Family": Family,
     "FamilyCalendar": FamilyCalendar,
+    "FamilyRoutine": FamilyRoutine,
     "Home": Home,
     "Inventory": Inventory,
     "Projects": Projects,
     "Repairs": Repairs,
-    "Shopping": Shopping,
-    "FamilyRoutine": FamilyRoutine,
     "SchoolSchedule": SchoolSchedule,
+    "Shopping": Shopping,
 }
 
 export const pagesConfig = {

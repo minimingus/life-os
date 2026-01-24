@@ -182,13 +182,16 @@ export default function SchoolSchedule() {
     setEditItem(item);
     if (isActivity) {
       setActivityFormData(item);
+      setActiveTab("activities");
     } else {
       setFormData(item);
+      setActiveTab("schedule");
     }
     setShowDialog(true);
   };
 
   const openAdd = (day, period) => {
+    setActiveTab("schedule");
     setFormData({
       ...formData,
       family_member_id: selectedMember || "",

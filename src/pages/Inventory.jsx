@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, isBefore } from "date-fns";
 import { CheckCircle2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import NotificationSettingsPanel from "@/components/NotificationSettingsPanel";
 
 const CATEGORIES = {
   fruits: { label: "פירות", color: "bg-red-100 text-red-600" },
@@ -90,6 +91,7 @@ export default function Inventory() {
   const [activeTab, setActiveTab] = useState("available");
   const [expandedItems, setExpandedItems] = useState({});
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptResult, setReceiptResult] = useState(null);
   const [dismissedOutOfStockAlert, setDismissedOutOfStockAlert] = useState(false);
@@ -112,6 +114,18 @@ export default function Inventory() {
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory"],
     queryFn: () => base44.entities.InventoryItem.list()
+  });
+
+  const { data: notificationSettings } = useQuery({
+    queryKey: ["notificationSettings"],
+    queryFn: async () => {
+      try {
+        const items = await base44.entities.NotificationSettings.list();
+        return items[0] || null;
+      } catch {
+        return null;
+      }
+    }
   });
 
   const createMutation = useMutation({
@@ -439,6 +453,13 @@ export default function Inventory() {
       >
         <Button
           variant="outline"
+          onClick={() => setShowSettings(!showSettings)}
+          className="border-slate-200 hover:bg-slate-50"
+        >
+          🔔 התראות
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => setShowReceiptDialog(true)}
           className="border-blue-200 text-blue-600 hover:bg-blue-50"
         >
@@ -446,6 +467,12 @@ export default function Inventory() {
           העלה חשבונית
         </Button>
       </PageHeader>
+
+      {showSettings && (
+        <div className="mb-6">
+          <NotificationSettingsPanel />
+        </div>
+      )}
 
       {/* Out of Stock Alert - CRITICAL */}
       {outOfStockCount > 0 && !dismissedOutOfStockAlert && (

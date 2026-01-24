@@ -20,6 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { 
   Wrench, 
   Trash2, 
@@ -34,7 +42,8 @@ import {
   Hammer,
   HardHat,
   User,
-  Building
+  Building,
+  MoreVertical
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -53,6 +62,12 @@ const PRIORITY_CONFIG = {
   urgent: { label: "דחוף", color: "bg-rose-100 text-rose-600" }
 };
 
+const SUB_STATUS_CONFIG = {
+  parts_purchased: { label: "נרכשו חלקים", color: "bg-cyan-100 text-cyan-600" },
+  waiting_delivery: { label: "ממתין למשלוח", color: "bg-amber-100 text-amber-600" },
+  waiting_assembly: { label: "ממתין להרכבה", color: "bg-purple-100 text-purple-600" }
+};
+
 export default function Repairs() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -69,7 +84,8 @@ export default function Repairs() {
     due_date: "",
     photos: [],
     work_type: "diy",
-    funding: "self"
+    funding: "self",
+    sub_status: null
   });
 
   const queryClient = useQueryClient();
@@ -100,6 +116,11 @@ export default function Repairs() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["repairs"] })
   });
 
+  const quickUpdateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Repair.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["repairs"] })
+  });
+
   const resetForm = () => {
     setShowDialog(false);
     setEditItem(null);
@@ -113,7 +134,8 @@ export default function Repairs() {
       due_date: "",
       photos: [],
       work_type: "diy",
-      funding: "self"
+      funding: "self",
+      sub_status: null
     });
   };
 
@@ -145,7 +167,8 @@ export default function Repairs() {
       due_date: item.due_date || "",
       photos: item.photos || [],
       work_type: item.work_type || "diy",
-      funding: item.funding || "self"
+      funding: item.funding || "self",
+      sub_status: item.sub_status || null
     });
     setShowDialog(true);
   };
@@ -156,6 +179,18 @@ export default function Repairs() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setFormData({ ...formData, photos: [...formData.photos, file_url] });
     }
+  };
+
+  const handleQuickStatusChange = (repair, newStatus, newSubStatus = null) => {
+    quickUpdateMutation.mutate({
+      id: repair.id,
+      data: {
+        ...repair,
+        status: newStatus,
+        sub_status: newSubStatus,
+        completed_date: newStatus === "completed" ? format(new Date(), "yyyy-MM-dd") : null
+      }
+    });
   };
 
   let filteredRepairs = repairs;
@@ -414,17 +449,62 @@ export default function Repairs() {
                     </div>
                   </div>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteMutation.mutate(repair.id);
-                    }}
-                    className="text-slate-400 hover:text-rose-500 flex-shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-400 hover:text-blue-500 flex-shrink-0"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>שינוי סטטוס</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, "pending")}>
+                          <Clock className="w-4 h-4 ml-2" />
+                          ממתין
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, "in_progress")}>
+                          <Loader2 className="w-4 h-4 ml-2" />
+                          בטיפול
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, "waiting_parts")}>
+                          <Package className="w-4 h-4 ml-2" />
+                          ממתין לחלקים
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, "completed")}>
+                          <CheckCircle2 className="w-4 h-4 ml-2" />
+                          הושלם
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>תת-סטטוס</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, repair.status, "parts_purchased")}>
+                          נרכשו חלקים
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, repair.status, "waiting_delivery")}>
+                          ממתין למשלוח
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, repair.status, "waiting_assembly")}>
+                          ממתין להרכבה
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickStatusChange(repair, repair.status, null)}>
+                          נקה תת-סטטוס
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteMutation.mutate(repair.id)}
+                      className="text-slate-400 hover:text-rose-500 flex-shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
@@ -538,6 +618,26 @@ export default function Repairs() {
                 </Select>
               </div>
             </div>
+
+            {formData.status === "waiting_parts" && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">תת-סטטוס (אופציונלי)</label>
+                <Select
+                  value={formData.sub_status || "none"}
+                  onValueChange={(v) => setFormData({ ...formData, sub_status: v === "none" ? null : v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="בחר תת-סטטוס" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">ללא תת-סטטוס</SelectItem>
+                    {Object.entries(SUB_STATUS_CONFIG).map(([key, { label }]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>

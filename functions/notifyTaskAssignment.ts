@@ -10,28 +10,39 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+    console.log('📌 Task notification payload:', JSON.stringify(body, null, 2));
+    
     const task_id = body.event?.entity_id || body.task_id;
     const event_type = body.event?.type || body.event_type || 'created';
     
+    console.log(`📌 Processing task_id=${task_id}, event_type=${event_type}`);
+    
     if (!task_id) {
+      console.error('❌ Missing task_id in payload:', body);
       return Response.json({ error: 'Missing task_id', body }, { status: 400 });
     }
 
-    // Get the task by listing and filtering (filter by id doesn't work reliably)
+    // Get the task by listing and filtering
     const allTasks = await base44.entities.Task.list();
     const task = allTasks.find(t => t.id === task_id);
     
+    console.log(`📌 Found task:`, task?.title, 'assigned_to:', task?.assigned_to_id);
+    
     if (!task) {
+      console.error(`❌ Task ${task_id} not found`);
       return Response.json({ error: `Task ${task_id} not found`, available_tasks: allTasks.length }, { status: 404 });
     }
 
     if (!task.assigned_to_id) {
+      console.log('📌 Task has no assignment, skipping notification');
       return Response.json({ action: 'skipped', reason: 'no_assignment' });
     }
 
     // Get the assigned family member
     const allMembers = await base44.entities.FamilyMember.list();
     const member = allMembers.find(m => m.id === task.assigned_to_id);
+    
+    console.log(`📌 Member found:`, member?.name, 'preference:', member?.notification_preference);
 
     if (!member || member.notification_preference === 'none') {
       return Response.json({ action: 'skipped', reason: 'no_notification_enabled' });
@@ -46,6 +57,7 @@ Deno.serve(async (req) => {
 
     // Send email if enabled
     if ((member.notification_preference === 'email' || member.notification_preference === 'both') && member.email) {
+      console.log(`📧 Sending email to ${member.email}`);
       const emailBody = `
 שלום ${member.name},
 
@@ -56,30 +68,39 @@ ${taskTitle}${taskDescription}${dueDate}
 לכנס למערכת והצג את המשימה שלך.
       `.trim();
 
-      await base44.integrations.Core.SendEmail({
-        to: member.email,
-        subject: `משימה חדשה: ${taskTitle}`,
-        body: emailBody
-      });
-      sentEmail = true;
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: member.email,
+          subject: `משימה חדשה: ${taskTitle}`,
+          body: emailBody
+        });
+        console.log(`✅ Email sent successfully to ${member.email}`);
+        sentEmail = true;
+      } catch (emailError) {
+        console.error(`❌ Email send failed:`, emailError);
+      }
+    } else {
+      console.log(`⏭️ Skipping email - preference: ${member.notification_preference}, email: ${member.email}`);
     }
 
     // Send SMS if enabled (placeholder - requires SMS service)
     if ((member.notification_preference === 'sms' || member.notification_preference === 'both') && member.phone) {
-      // Note: SMS integration would require an external SMS provider
-      // For now, we'll log that it was attempted
-      console.log(`SMS would be sent to ${member.phone}: משימה חדשה - ${taskTitle}`);
+      console.log(`📱 SMS would be sent to ${member.phone}: משימה חדשה - ${taskTitle}`);
       sentSms = true;
     }
 
-    return Response.json({ 
+    const result = { 
       action: 'notified',
       email: sentEmail,
       sms: sentSms,
-      recipient: member.name
-    });
+      recipient: member.name,
+      task: taskTitle
+    };
+    
+    console.log('✅ Notification result:', result);
+    return Response.json(result);
   } catch (error) {
-    console.error('Error notifying task assignment:', error);
+    console.error('❌ Error notifying task assignment:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

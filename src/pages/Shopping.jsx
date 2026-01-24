@@ -239,6 +239,11 @@ export default function Shopping() {
                           {item.quantity} {UNITS[item.unit] || item.unit}
                           {item.notes && !isAutoAdded && ` • ${item.notes}`}
                         </p>
+                        {item.assigned_to_name && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            👤 {item.assigned_to_name}
+                          </p>
+                        )}
                       </div>
                       {item.priority === "high" && !isAutoAdded && (
                         <Badge className="bg-rose-100 text-rose-600 border-0">דחוף</Badge>

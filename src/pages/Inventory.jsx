@@ -29,7 +29,8 @@ import {
   DoorOpen,
   Plus,
   Minus,
-  ShoppingCart
+  ShoppingCart,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, isBefore } from "date-fns";

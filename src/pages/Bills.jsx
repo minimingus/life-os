@@ -810,6 +810,7 @@ export default function Bills() {
                </div>
             </div>
           </div>
+          )}
         </TabsContent>
       </Tabs>
 

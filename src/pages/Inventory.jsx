@@ -675,7 +675,7 @@ export default function Inventory() {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    placeholder='לדוגמא: "הכרחי לסופ\'ש"'
+                    placeholder="לדוגמא: הכרחי לסופ'ש"
                     className="flex-1"
                   />
                   <Button type="button" onClick={addTag} variant="outline" size="sm">

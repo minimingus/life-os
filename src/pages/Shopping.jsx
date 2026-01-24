@@ -31,7 +31,8 @@ import {
   Croissant,
   Snowflake,
   Sparkles,
-  Package
+  Package,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -200,10 +201,15 @@ export default function Shopping() {
                 {pendingItems.map(item => {
                   const cat = CATEGORIES[item.category] || CATEGORIES.other;
                   const Icon = cat.icon;
+                  const isAutoAdded = item.notes?.includes('נוסף אוטומטית - נגמר במלאי');
+                  
                   return (
                     <div 
                       key={item.id}
-                      className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                      className={cn(
+                        "flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors cursor-pointer",
+                        isAutoAdded && "bg-gradient-to-r from-red-50 to-orange-50 border-r-4 border-red-500 animate-pulse"
+                      )}
                       onClick={() => openEdit(item)}
                     >
                       <Checkbox
@@ -218,13 +224,23 @@ export default function Shopping() {
                         <Icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-800">{item.name}</p>
-                        <p className="text-sm text-slate-500">
+                        <div className="flex items-center gap-2">
+                          <p className={cn("font-medium text-slate-800", isAutoAdded && "font-bold")}>
+                            {item.name}
+                          </p>
+                          {isAutoAdded && (
+                            <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white border-0 shadow-lg shadow-red-500/30">
+                              <AlertTriangle className="w-3 h-3 ml-1" />
+                              נגמר במלאי!
+                            </Badge>
+                          )}
+                        </div>
+                        <p className={cn("text-sm", isAutoAdded ? "text-red-600 font-medium" : "text-slate-500")}>
                           {item.quantity} {UNITS[item.unit] || item.unit}
-                          {item.notes && ` • ${item.notes}`}
+                          {item.notes && !isAutoAdded && ` • ${item.notes}`}
                         </p>
                       </div>
-                      {item.priority === "high" && (
+                      {item.priority === "high" && !isAutoAdded && (
                         <Badge className="bg-rose-100 text-rose-600 border-0">דחוף</Badge>
                       )}
                       <Button

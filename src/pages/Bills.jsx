@@ -630,6 +630,12 @@ export default function Bills() {
 
         {/* Reports Tab */}
         <TabsContent value="reports" className="space-y-6 mt-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowInquiryDialog(true)} className="bg-blue-500 hover:bg-blue-600">
+              <Plus className="w-4 h-4 ml-2" />
+              הוסף דוח
+            </Button>
+          </div>
           <div className="grid gap-4">
             <div className="bg-white rounded-2xl border border-slate-100 p-6">
               <h3 className="font-semibold text-slate-800 mb-4">סיכום חודשי</h3>

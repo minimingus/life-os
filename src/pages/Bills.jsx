@@ -955,6 +955,116 @@ export default function Bills() {
         </DialogContent>
       </Dialog>
 
+      {/* Add/Edit Report Dialog */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{editReport ? "עריכת דוח" : "הוספת דוח חדש"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleReportSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700">כותרת הדוח</label>
+              <Input
+                value={reportFormData.title}
+                onChange={(e) => setReportFormData({ ...reportFormData, title: e.target.value })}
+                placeholder="למשל: דוח ינואר"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">תיאור</label>
+              <Textarea
+                value={reportFormData.description}
+                onChange={(e) => setReportFormData({ ...reportFormData, description: e.target.value })}
+                placeholder="פרט תוכן הדוח..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">תקופה</label>
+                <Input
+                  value={reportFormData.period}
+                  onChange={(e) => setReportFormData({ ...reportFormData, period: e.target.value })}
+                  placeholder="ינואר 2026"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">סה"כ סכום</label>
+                <Input
+                  type="number"
+                  value={reportFormData.total_amount}
+                  onChange={(e) => setReportFormData({ ...reportFormData, total_amount: e.target.value })}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">הערות</label>
+              <Textarea
+                value={reportFormData.notes}
+                onChange={(e) => setReportFormData({ ...reportFormData, notes: e.target.value })}
+                placeholder="הערות נוספות..."
+                className="mt-1"
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">קובץ דוח</label>
+              {reportFormData.file_url ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <a 
+                    href={reportFormData.file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-600 text-sm"
+                  >
+                    צפה בקובץ
+                  </a>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setReportFormData({ ...reportFormData, file_url: "" })}
+                    className="text-rose-500"
+                  >
+                    הסר
+                  </Button>
+                </div>
+              ) : (
+                <label className="mt-2 flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={handleReportFileUpload}
+                  />
+                  <Upload className="w-5 h-5 text-slate-400" />
+                  <span className="text-sm text-slate-500">העלה קובץ</span>
+                </label>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600">
+                {editReport ? "עדכן" : "הוסף דוח"}
+              </Button>
+              <Button type="button" variant="outline" onClick={resetReportForm}>
+                ביטול
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Add/Edit Inquiry Dialog */}
       <Dialog open={showInquiryDialog} onOpenChange={setShowInquiryDialog}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">

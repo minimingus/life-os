@@ -2,19 +2,20 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { 
-        Home, 
-        ShoppingCart, 
-        Package, 
-        Wrench, 
-        FolderKanban, 
-        Receipt, 
-        Calendar, 
-        Users,
-        Menu,
-        X,
-        ChevronLeft,
-        Clock
-      } from "lucide-react";
+              Home, 
+              ShoppingCart, 
+              Package, 
+              Wrench, 
+              FolderKanban, 
+              Receipt, 
+              Calendar, 
+              Users,
+              Menu,
+              X,
+              ChevronLeft,
+              Clock,
+              ListTodo
+            } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children, currentPageName }) {
@@ -23,6 +24,7 @@ export default function Layout({ children, currentPageName }) {
 
   const navigation = [
     { name: "דף הבית", href: createPageUrl("Home"), icon: Home, page: "Home" },
+    { name: "משימות", href: createPageUrl("Tasks"), icon: ListTodo, page: "Tasks" },
     { name: "רשימת קניות", href: createPageUrl("Shopping"), icon: ShoppingCart, page: "Shopping" },
     { name: "מלאי בבית", href: createPageUrl("Inventory"), icon: Package, page: "Inventory" },
     { name: "אחזקת בית", href: createPageUrl("Repairs"), icon: Wrench, page: "Repairs" },

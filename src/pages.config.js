@@ -8,6 +8,7 @@ import Projects from './pages/Projects';
 import Repairs from './pages/Repairs';
 import SchoolSchedule from './pages/SchoolSchedule';
 import Shopping from './pages/Shopping';
+import Tasks from './pages/Tasks';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +23,7 @@ export const PAGES = {
     "Repairs": Repairs,
     "SchoolSchedule": SchoolSchedule,
     "Shopping": Shopping,
+    "Tasks": Tasks,
 }
 
 export const pagesConfig = {

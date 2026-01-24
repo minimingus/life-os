@@ -180,6 +180,27 @@ export default function Bills() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inquiries"] })
   });
 
+  const createReportMutation = useMutation({
+    mutationFn: (data) => base44.entities.Report.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      resetReportForm();
+    }
+  });
+
+  const updateReportMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Report.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      resetReportForm();
+    }
+  });
+
+  const deleteReportMutation = useMutation({
+    mutationFn: (id) => base44.entities.Report.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] })
+  });
+
   const resetForm = () => {
     setShowDialog(false);
     setEditItem(null);

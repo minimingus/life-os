@@ -2,18 +2,19 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { 
-  Home, 
-  ShoppingCart, 
-  Package, 
-  Wrench, 
-  FolderKanban, 
-  Receipt, 
-  Calendar, 
-  Users,
-  Menu,
-  X,
-  ChevronLeft
-} from "lucide-react";
+        Home, 
+        ShoppingCart, 
+        Package, 
+        Wrench, 
+        FolderKanban, 
+        Receipt, 
+        Calendar, 
+        Users,
+        Menu,
+        X,
+        ChevronLeft,
+        Clock
+      } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children, currentPageName }) {
@@ -28,6 +29,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "פרויקטים", href: createPageUrl("Projects"), icon: FolderKanban, page: "Projects" },
     { name: "חשבונות", href: createPageUrl("Bills"), icon: Receipt, page: "Bills" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },
+    { name: "לוז משפחתי", href: createPageUrl("FamilyRoutine"), icon: Clock, page: "FamilyRoutine" },
     { name: "בני המשפחה", href: createPageUrl("Family"), icon: Users, page: "Family" },
   ];
 

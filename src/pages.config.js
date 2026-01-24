@@ -6,6 +6,7 @@ import Inventory from './pages/Inventory';
 import Projects from './pages/Projects';
 import Repairs from './pages/Repairs';
 import Shopping from './pages/Shopping';
+import FamilyRoutine from './pages/FamilyRoutine';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "Projects": Projects,
     "Repairs": Repairs,
     "Shopping": Shopping,
+    "FamilyRoutine": FamilyRoutine,
 }
 
 export const pagesConfig = {

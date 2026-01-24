@@ -131,6 +131,11 @@ export default function Bills() {
     queryFn: () => base44.entities.FamilyMember.list()
   });
 
+  const { data: reports = [] } = useQuery({
+    queryKey: ["reports"],
+    queryFn: () => base44.entities.Report.list("-created_date")
+  });
+
   const parents = familyMembers.filter(m => m.role === "parent");
 
   const createMutation = useMutation({

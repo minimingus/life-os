@@ -69,11 +69,35 @@ ${taskTitle}${taskDescription}${dueDate}
       `.trim();
 
       try {
-        await base44.integrations.Core.SendEmail({
-          to: member.email,
-          subject: `משימה חדשה: ${taskTitle}`,
-          body: emailBody
+        const accessToken = await base44.asServiceRole.connectors.getAccessToken("gmail");
+        console.log(`🔑 Got Gmail access token`);
+        
+        // Create the email in RFC 2822 format
+        const emailMessage = [
+          `To: ${member.email}`,
+          `Subject: =?UTF-8?B?${Buffer.from(`משימה חדשה: ${taskTitle}`).toString('base64')}?=`,
+          `Content-Type: text/plain; charset="UTF-8"`,
+          `Content-Transfer-Encoding: base64`,
+          '',
+          Buffer.from(emailBody).toString('base64')
+        ].join('\r\n');
+
+        const response = await fetch('https://www.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            raw: Buffer.from(emailMessage).toString('base64')
+          })
         });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Gmail API error: ${response.status} - ${error}`);
+        }
+
         console.log(`✅ Email sent successfully to ${member.email}`);
         sentEmail = true;
       } catch (emailError) {

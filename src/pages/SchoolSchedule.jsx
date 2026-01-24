@@ -233,6 +233,16 @@ export default function SchoolSchedule() {
 
   const children = familyMembers.filter(m => m.role === "child");
 
+  React.useEffect(() => {
+    if (!initialized && children.length > 0) {
+      const ashri = children.find(c => c.name === "אשרי");
+      if (ashri) {
+        setSelectedMember(ashri.id);
+      }
+      setInitialized(true);
+    }
+  }, [familyMembers, initialized]);
+
   return (
     <div className="space-y-6">
       <PageHeader

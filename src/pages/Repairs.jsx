@@ -257,9 +257,17 @@ export default function Repairs() {
                       {repair.estimated_cost && (
                         <span>עלות משוערת: ₪{repair.estimated_cost}</span>
                       )}
-                      {repair.due_date && repair.due_date.length >= 10 && (
-                        <span>יעד: {format(parseISO(repair.due_date), "dd/MM/yyyy")}</span>
-                      )}
+                      {repair.due_date && repair.due_date.length >= 10 && (() => {
+                        try {
+                          const dueDate = parseISO(repair.due_date);
+                          if (!isNaN(dueDate.getTime())) {
+                            return <span>יעד: {format(dueDate, "dd/MM/yyyy")}</span>;
+                          }
+                        } catch (error) {
+                          return null;
+                        }
+                        return null;
+                      })()}
                       {repair.photos && repair.photos.length > 0 && (
                         <span className="flex items-center gap-1">
                           <Camera className="w-3 h-3" />

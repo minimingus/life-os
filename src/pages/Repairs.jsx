@@ -389,8 +389,7 @@ export default function Repairs() {
                         </Badge>
                       )}
                     </div>
-                    </div>
-
+                    
                     <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
                       {repair.estimated_cost && (
                         <span>עלות משוערת: ₪{repair.estimated_cost}</span>

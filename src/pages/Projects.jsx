@@ -49,16 +49,26 @@ const RANGE_CONFIG = {
   long: { label: "טווח ארוך", color: "bg-purple-100 text-purple-700" }
 };
 
+const TYPE_CONFIG = {
+  personal: { label: "אישי", color: "bg-violet-100 text-violet-700" },
+  family: { label: "משפחתי", color: "bg-cyan-100 text-cyan-700" }
+};
+
 export default function Projects() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterYear, setFilterYear] = useState("all");
   const [filterRange, setFilterRange] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [filterMember, setFilterMember] = useState("all");
   const [newTask, setNewTask] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    type: "family",
+    family_member_id: "",
+    family_member_name: "",
     status: "planning",
     year: new Date().getFullYear(),
     range: "medium",
@@ -75,6 +85,11 @@ export default function Projects() {
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: () => base44.entities.Project.list("-created_date")
+  });
+
+  const { data: familyMembers = [] } = useQuery({
+    queryKey: ["familyMembers"],
+    queryFn: () => base44.entities.FamilyMember.list()
   });
 
   const createMutation = useMutation({
@@ -105,6 +120,9 @@ export default function Projects() {
     setFormData({
       title: "",
       description: "",
+      type: "family",
+      family_member_id: "",
+      family_member_name: "",
       status: "planning",
       year: new Date().getFullYear(),
       range: "medium",
@@ -139,6 +157,9 @@ export default function Projects() {
     setFormData({
       title: item.title || "",
       description: item.description || "",
+      type: item.type || "family",
+      family_member_id: item.family_member_id || "",
+      family_member_name: item.family_member_name || "",
       status: item.status || "planning",
       year: item.year || new Date().getFullYear(),
       range: item.range || "medium",
@@ -187,6 +208,8 @@ export default function Projects() {
     if (filterStatus !== "all" && p.status !== filterStatus) return false;
     if (filterYear !== "all" && p.year !== parseInt(filterYear)) return false;
     if (filterRange !== "all" && p.range !== filterRange) return false;
+    if (filterType !== "all" && p.type !== filterType) return false;
+    if (filterMember !== "all" && p.family_member_id !== filterMember) return false;
     return true;
   });
 
@@ -283,6 +306,56 @@ export default function Projects() {
               ))}
             </div>
           </div>
+
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">סוג</label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterType === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterType("all")}
+                className={filterType === "all" ? "bg-blue-500" : ""}
+              >
+                הכל
+              </Button>
+              {Object.entries(TYPE_CONFIG).map(([key, { label }]) => (
+                <Button
+                  key={key}
+                  variant={filterType === key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType(key)}
+                  className={filterType === key ? "bg-blue-500" : ""}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">בן משפחה</label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterMember === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterMember("all")}
+                className={filterMember === "all" ? "bg-blue-500" : ""}
+              >
+                כל בני המשפחה
+              </Button>
+              {familyMembers.map(member => (
+                <Button
+                  key={member.id}
+                  variant={filterMember === member.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterMember(member.id)}
+                  className={filterMember === member.id ? "bg-blue-500" : ""}
+                >
+                  {member.name}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -299,6 +372,7 @@ export default function Projects() {
           {filteredProjects.map(project => {
             const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning;
             const rangeConfig = RANGE_CONFIG[project.range] || RANGE_CONFIG.medium;
+            const typeConfig = TYPE_CONFIG[project.type] || TYPE_CONFIG.family;
             const progress = getProgress(project);
             const completedTasks = project.tasks?.filter(t => t.completed).length || 0;
             const totalTasks = project.tasks?.length || 0;
@@ -325,6 +399,14 @@ export default function Projects() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-lg text-slate-800">{project.title}</h3>
+                        <Badge className={cn(typeConfig.color, "border-0")}>
+                          {typeConfig.label}
+                        </Badge>
+                        {project.type === "personal" && project.family_member_name && (
+                          <Badge variant="outline" className="border-violet-200 text-violet-700">
+                            {project.family_member_name}
+                          </Badge>
+                        )}
                         <Badge className={cn(statusConfig.color, "border-0")}>
                           {statusConfig.label}
                         </Badge>
@@ -433,6 +515,56 @@ export default function Projects() {
                 rows={3}
               />
             </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">סוג הפרויקט</label>
+              <Select
+                value={formData.type}
+                onValueChange={(v) => setFormData({ 
+                  ...formData, 
+                  type: v,
+                  family_member_id: v === "family" ? "" : formData.family_member_id,
+                  family_member_name: v === "family" ? "" : formData.family_member_name
+                })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TYPE_CONFIG).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.type === "personal" && familyMembers.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">בן משפחה</label>
+                <Select
+                  value={formData.family_member_id}
+                  onValueChange={(v) => {
+                    const member = familyMembers.find(m => m.id === v);
+                    setFormData({
+                      ...formData,
+                      family_member_id: v,
+                      family_member_name: member?.name || ""
+                    });
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="בחר בן משפחה" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {familyMembers.map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div>

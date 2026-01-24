@@ -514,7 +514,10 @@ export default function Inventory() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-slate-800">{item.name}</p>
                       {item.is_staple && (
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm">
+                          <Star className="w-3 h-3 ml-1 fill-white" />
+                          פריט חובה
+                        </Badge>
                       )}
                       {item.status === "out_of_stock" && (
                         <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white text-xs animate-pulse shadow-lg shadow-red-500/50">

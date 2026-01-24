@@ -719,11 +719,46 @@ export default function Bills() {
         {/* Reports Tab */}
         <TabsContent value="reports" className="space-y-6 mt-6">
           <div className="flex justify-end">
-            <Button onClick={() => setShowInquiryDialog(true)} className="bg-blue-500 hover:bg-blue-600">
+            <Button onClick={() => setShowReportDialog(true)} className="bg-blue-500 hover:bg-blue-600">
               <Plus className="w-4 h-4 ml-2" />
               הוסף דוח
             </Button>
           </div>
+
+          {reports.length > 0 && (
+            <div className="grid gap-3">
+              {reports.map(report => (
+                <div key={report.id} className="bg-white rounded-2xl border border-slate-100 p-5 hover:shadow-md transition-all cursor-pointer" onClick={() => openEditReport(report)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-slate-800">{report.title}</h3>
+                      {report.description && (
+                        <p className="text-sm text-slate-600 mt-1">{report.description}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-2 text-sm text-slate-500">
+                        {report.period && <span>{report.period}</span>}
+                        {report.total_amount && (
+                          <span className="font-medium text-blue-600">סה"כ: ₪{report.total_amount.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteReportMutation.mutate(report.id);
+                      }}
+                      className="text-slate-400 hover:text-rose-500 flex-shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="grid gap-4">
             <div className="bg-white rounded-2xl border border-slate-100 p-6">
               <h3 className="font-semibold text-slate-800 mb-4">סיכום חודשי</h3>

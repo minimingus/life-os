@@ -716,6 +716,7 @@ export default function SchoolSchedule() {
                 ביטול
               </Button>
             </div>
+            </>
             )}
           </form>
         </DialogContent>

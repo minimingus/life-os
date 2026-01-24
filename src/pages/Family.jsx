@@ -68,7 +68,10 @@ export default function Family() {
     birth_date: "",
     color: "#3b82f6",
     avatar: "",
-    responsibilities: []
+    responsibilities: [],
+    email: "",
+    phone: "",
+    notification_preference: "none"
   });
 
   const queryClient = useQueryClient();
@@ -105,7 +108,10 @@ export default function Family() {
       birth_date: "",
       color: "#3b82f6",
       avatar: "",
-      responsibilities: []
+      responsibilities: [],
+      email: "",
+      phone: "",
+      notification_preference: "none"
     });
   };
 
@@ -126,7 +132,10 @@ export default function Family() {
       birth_date: item.birth_date || "",
       color: item.color || "#3b82f6",
       avatar: item.avatar || "",
-      responsibilities: item.responsibilities || []
+      responsibilities: item.responsibilities || [],
+      email: item.email || "",
+      phone: item.phone || "",
+      notification_preference: item.notification_preference || "none"
     });
     setShowDialog(true);
   };
@@ -358,6 +367,56 @@ export default function Family() {
                 ))}
               </div>
             </div>
+
+            {formData.role === "parent" && (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-blue-900 mb-3">הגדרות התראות</p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">מייל</label>
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="הזן כתובת מייל"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">טלפון (SMS)</label>
+                      <Input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="הזן מספר טלפון"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">ערוץ התראות</label>
+                      <Select
+                        value={formData.notification_preference}
+                        onValueChange={(v) => setFormData({ ...formData, notification_preference: v })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">אל תשלח התראות</SelectItem>
+                          <SelectItem value="email">מייל בלבד</SelectItem>
+                          <SelectItem value="sms">SMS בלבד</SelectItem>
+                          <SelectItem value="both">מייל + SMS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600">

@@ -61,9 +61,9 @@ Deno.serve(async (req) => {
     // Find responsible family member
     let assignedToId = null;
     let assignedToName = null;
+    const allMembers = await base44.entities.FamilyMember.list();
 
     if (shouldAdd) {
-      const allMembers = await base44.entities.FamilyMember.list();
       const shopperMember = allMembers.find(m => 
         m.responsibilities && m.responsibilities.includes('קניות')
       );
@@ -106,6 +106,22 @@ Deno.serve(async (req) => {
             'מתקרב לתאריך תפוגה'
           }`
         });
+
+        // Create a task for the responsible person
+        if (reason === 'out_of_stock' && assignedToId) {
+          await base44.entities.Task.create({
+            title: `קנות ${inventoryItem.name}`,
+            description: inventoryItem.is_staple ? 'זה פריט בסיסי שחייב להיות במלאי' : '',
+            category: 'shopping',
+            priority: inventoryItem.is_staple ? 'high' : 'medium',
+            status: 'pending',
+            assigned_to_id: assignedToId,
+            assigned_to_name: assignedToName,
+            related_item_id: inventory_item_id,
+            related_item_name: inventoryItem.name
+          });
+        }
+
         return Response.json({ action: 'created', id: newItem.id, assignedToId });
       }
     } else {

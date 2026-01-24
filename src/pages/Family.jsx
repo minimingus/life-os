@@ -355,6 +355,26 @@ export default function Family() {
 
           {selectedMember && (
             <div className="space-y-6 mt-4">
+              {(() => {
+                const memberProjects = projects.filter(p => p.family_member_id === selectedMember.id);
+                const memberTasks = tasks.filter(t => t.family_member_id === selectedMember.id);
+                const memberEvents = events.filter(e => e.family_member_id === selectedMember.id);
+                const memberSchedule = scheduleItems.filter(s => s.family_member_id === selectedMember.id);
+                const memberActivities = activities.filter(a => a.family_member_id === selectedMember.id);
+                
+                const hasAnyData = memberProjects.length > 0 || memberTasks.length > 0 || 
+                  memberEvents.length > 0 || memberSchedule.length > 0 || memberActivities.length > 0;
+
+                if (!hasAnyData) {
+                  return (
+                    <div className="text-center py-12 text-slate-500">
+                      <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>אין פרטים קשורים לבן משפחה זה כרגע</p>
+                    </div>
+                  );
+                }
+              })()}
+
               {/* Projects */}
               {(() => {
                 const memberProjects = projects.filter(p => p.family_member_id === selectedMember.id);

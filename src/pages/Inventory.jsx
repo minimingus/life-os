@@ -73,6 +73,7 @@ export default function Inventory() {
   const [editItem, setEditItem] = useState(null);
   const [filterLocation, setFilterLocation] = useState("all");
   const [showStaplesOnly, setShowStaplesOnly] = useState(false);
+  const [activeFilter, setActiveFilter] = useState(null);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptResult, setReceiptResult] = useState(null);
@@ -354,6 +355,15 @@ export default function Inventory() {
     filteredItems = filteredItems.filter(i => i.is_staple);
   }
 
+  // Apply active filter from badges
+  if (activeFilter === "lowStaples") {
+    filteredItems = filteredItems.filter(i => i.is_staple && (i.status === "low" || i.status === "out_of_stock"));
+  } else if (activeFilter === "expired") {
+    filteredItems = filteredItems.filter(i => i.status === "expired");
+  } else if (activeFilter === "low") {
+    filteredItems = filteredItems.filter(i => i.status === "low");
+  }
+
   const getExpiryInfo = (date) => {
     if (!date) return null;
     const expiry = parseISO(date);
@@ -423,19 +433,38 @@ export default function Inventory() {
       {(expiredCount > 0 || lowCount > 0 || lowStapleCount > 0) && (
         <div className="flex flex-wrap gap-3">
           {lowStapleCount > 0 && (
-            <Badge className="bg-orange-500">
+            <Badge 
+              className={cn(
+                "bg-orange-500 cursor-pointer hover:bg-orange-600 transition-colors",
+                activeFilter === "lowStaples" && "ring-2 ring-orange-300 ring-offset-2"
+              )}
+              onClick={() => setActiveFilter(activeFilter === "lowStaples" ? null : "lowStaples")}
+            >
               <Star className="w-3 h-3 ml-1" />
               {lowStapleCount} פריטים בסיסיים נגמרים
             </Badge>
           )}
           {expiredCount > 0 && (
-            <Badge variant="destructive" className="bg-rose-500">
+            <Badge 
+              variant="destructive" 
+              className={cn(
+                "bg-rose-500 cursor-pointer hover:bg-rose-600 transition-colors",
+                activeFilter === "expired" && "ring-2 ring-rose-300 ring-offset-2"
+              )}
+              onClick={() => setActiveFilter(activeFilter === "expired" ? null : "expired")}
+            >
               <AlertTriangle className="w-3 h-3 ml-1" />
               {expiredCount} פריטים פגי תוקף
             </Badge>
           )}
           {lowCount > 0 && (
-            <Badge className="bg-amber-500">
+            <Badge 
+              className={cn(
+                "bg-amber-500 cursor-pointer hover:bg-amber-600 transition-colors",
+                activeFilter === "low" && "ring-2 ring-amber-300 ring-offset-2"
+              )}
+              onClick={() => setActiveFilter(activeFilter === "low" ? null : "low")}
+            >
               <AlertTriangle className="w-3 h-3 ml-1" />
               {lowCount} פריטים במלאי נמוך
             </Badge>

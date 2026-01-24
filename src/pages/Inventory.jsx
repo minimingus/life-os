@@ -168,6 +168,33 @@ export default function Inventory() {
     return "ok";
   };
 
+  const addOrUpdateShoppingItem = async (item) => {
+    // בדוק אם הפריט קיים כבר ברשימת קניות
+    const existingItems = await base44.entities.ShoppingItem.list();
+    const existingItem = existingItems.find(si => 
+      si.name.toLowerCase() === item.name.toLowerCase() && !si.is_purchased
+    );
+
+    if (existingItem) {
+      // עדכן את הכמות של הפריט הקיים
+      await base44.entities.ShoppingItem.update(existingItem.id, {
+        ...existingItem,
+        quantity: (existingItem.quantity || 1) + (item.quantity || 1)
+      });
+    } else {
+      // יצור פריט חדש
+      await base44.entities.ShoppingItem.create({
+        name: item.name,
+        category: item.category,
+        quantity: item.quantity || 1,
+        unit: item.unit,
+        priority: item.is_staple ? 'high' : 'medium',
+        notes: 'נוסף אוטומטית - נגמר במלאי'
+      });
+    }
+    queryClient.invalidateQueries({ queryKey: ["shopping"] });
+  };
+
   const updateQuantity = async (item, delta) => {
     const newQuantity = Math.max(0, (item.quantity || 0) + delta);
     let status = getItemStatus({ ...item, quantity: newQuantity });
@@ -175,16 +202,7 @@ export default function Inventory() {
     // נגמר לחלוטין
     if (newQuantity === 0) {
       status = "out_of_stock";
-      
-      // הוסף אוטומטית לרשימת קניות
-      await base44.entities.ShoppingItem.create({
-        name: item.name,
-        category: item.category,
-        quantity: 1,
-        unit: item.unit,
-        priority: item.is_staple ? 'high' : 'medium',
-        notes: 'נוסף אוטומטית - נגמר במלאי'
-      });
+      await addOrUpdateShoppingItem(item);
     }
     
     updateMutation.mutate({ 
@@ -209,15 +227,8 @@ export default function Inventory() {
       data: { ...item, quantity: 0, status: "out_of_stock" } 
     });
     
-    // Add to shopping list
-    await base44.entities.ShoppingItem.create({
-      name: item.name,
-      category: item.category,
-      quantity: item.quantity || 1,
-      unit: item.unit,
-      priority: item.is_staple ? "high" : "medium",
-      notes: 'נוסף אוטומטית - נגמר במלאי'
-    });
+    // Add or update in shopping list
+    await addOrUpdateShoppingItem(item);
   };
 
   const handleReceiptUpload = async (e) => {

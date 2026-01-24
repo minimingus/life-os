@@ -1,4 +1,10 @@
 import React, { useState } from "react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import PageHeader from "@/components/ui/PageHeader";
@@ -82,6 +88,7 @@ export default function Inventory() {
   const [activeFilter, setActiveFilter] = useState(null);
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [activeTab, setActiveTab] = useState("available");
+  const [expandedItems, setExpandedItems] = useState({});
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptResult, setReceiptResult] = useState(null);
@@ -584,114 +591,127 @@ export default function Inventory() {
             ) : (
               <div className="grid gap-4">
                 {availableItems.map(item => {
-                  const cat = CATEGORIES[item.category] || CATEGORIES.other;
-                  const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
-                  const LocationIcon = loc.icon;
-                  const expiryInfo = getExpiryInfo(item.expiry_date);
-                  
-                  return (
-                    <div 
-                      key={item.id}
-                      className={cn(
-                        "rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer",
-                        item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
-                        item.status === "low" ? "border-amber-200 bg-amber-50/50" :
-                        "bg-white border-slate-100"
-                      )}
-                      onClick={() => openEdit(item)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", cat.color)}>
-                          <Package className="w-6 h-6" />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-semibold text-slate-800">{item.name}</p>
-                            {item.is_staple && (
-                              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm">
-                                <Star className="w-3 h-3 ml-1 fill-white" />
-                                פריט חובה
-                              </Badge>
-                            )}
-                            {item.status === "expired" && (
-                              <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
-                            )}
-                            {item.status === "low" && (
-                              <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
-                            )}
-                            {item.tags?.map((tag, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                <Tag className="w-3 h-3 ml-1" />
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <LocationIcon className="w-3 h-3" />
-                              {loc.label}
-                            </span>
-                            {expiryInfo && (
-                              <span className={cn("px-2 py-0.5 rounded-full text-xs", expiryInfo.color)}>
-                                תפוגה: {expiryInfo.text}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                   const cat = CATEGORIES[item.category] || CATEGORIES.other;
+                   const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
+                   const LocationIcon = loc.icon;
+                   const expiryInfo = getExpiryInfo(item.expiry_date);
+                   const isExpanded = expandedItems[item.id];
 
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item, -1)}
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="w-16 text-center font-semibold">
-                            {item.quantity} {UNITS[item.unit]}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item, 1)}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
+                   return (
+                     <Collapsible
+                       key={item.id}
+                       open={isExpanded}
+                       onOpenChange={(open) => setExpandedItems({...expandedItems, [item.id]: open})}
+                     >
+                       <CollapsibleTrigger asChild>
+                         <div 
+                           className={cn(
+                             "rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer flex items-center gap-4",
+                             item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
+                             item.status === "low" ? "border-amber-200 bg-amber-50/50" :
+                             "bg-white border-slate-100"
+                           )}
+                         >
+                           <ChevronDown className={cn("w-5 h-5 transition-transform flex-shrink-0", isExpanded && "rotate-180")} />
+                           <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0", cat.color)}>
+                             <Package className="w-6 h-6" />
+                           </div>
 
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            onClick={() => markAsFinished(item)}
-                            className="h-8 bg-red-500 hover:bg-red-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                            title="נגמר - הוסף לקניות"
-                          >
-                            נגמר
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => addToShoppingList(item)}
-                            className="text-slate-400 hover:text-blue-500"
-                            title="הוסף לרשימת קניות"
-                          >
-                            <ShoppingCart className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteMutation.mutate(item.id)}
-                            className="text-slate-400 hover:text-rose-500"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <p className="font-semibold text-slate-800">{item.name}</p>
+                               {item.is_staple && (
+                                 <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm">
+                                   <Star className="w-3 h-3 ml-1 fill-white" />
+                                   פריט חובה
+                                 </Badge>
+                               )}
+                             </div>
+                             <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+                               <span className="flex items-center gap-1">
+                                 <LocationIcon className="w-3 h-3" />
+                                 {loc.label}
+                               </span>
+                               <span className="font-semibold text-slate-700">{item.quantity} {UNITS[item.unit]}</span>
+                             </div>
+                           </div>
+                         </div>
+                       </CollapsibleTrigger>
+                       <CollapsibleContent className="pt-2">
+                         <div className="pl-12 space-y-3">
+                           {item.status === "expired" && (
+                             <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
+                           )}
+                           {item.status === "low" && (
+                             <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
+                           )}
+                           {expiryInfo && (
+                             <div className={cn("px-2 py-0.5 rounded-full text-xs inline-block", expiryInfo.color)}>
+                               תפוגה: {expiryInfo.text}
+                             </div>
+                           )}
+                           {item.tags?.length > 0 && (
+                             <div className="flex flex-wrap gap-2">
+                               {item.tags.map((tag, idx) => (
+                                 <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                   <Tag className="w-3 h-3 ml-1" />
+                                   {tag}
+                                 </Badge>
+                               ))}
+                             </div>
+                           )}
+                           <div className="flex items-center gap-2">
+                             <Button
+                               variant="outline"
+                               size="icon"
+                               className="h-8 w-8"
+                               onClick={() => updateQuantity(item, -1)}
+                             >
+                               <Minus className="w-4 h-4" />
+                             </Button>
+                             <span className="w-16 text-center font-semibold">
+                               {item.quantity} {UNITS[item.unit]}
+                             </span>
+                             <Button
+                               variant="outline"
+                               size="icon"
+                               className="h-8 w-8"
+                               onClick={() => updateQuantity(item, 1)}
+                             >
+                               <Plus className="w-4 h-4" />
+                             </Button>
+                           </div>
+                           <div className="flex items-center gap-1 pt-2">
+                             <Button
+                               onClick={() => markAsFinished(item)}
+                               className="h-8 bg-red-500 hover:bg-red-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                               title="נגמר - הוסף לקניות"
+                             >
+                               נגמר
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               onClick={() => addToShoppingList(item)}
+                               className="text-slate-400 hover:text-blue-500"
+                               title="הוסף לרשימת קניות"
+                             >
+                               <ShoppingCart className="w-4 h-4" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               onClick={() => deleteMutation.mutate(item.id)}
+                               className="text-slate-400 hover:text-rose-500"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </Button>
+                           </div>
+                         </div>
+                       </CollapsibleContent>
+                     </Collapsible>
+                   );
+                 })}
               </div>
             )}
           </TabsContent>
@@ -705,122 +725,128 @@ export default function Inventory() {
             ) : (
               <div className="grid gap-4">
                 {missingItems.map(item => {
-            const cat = CATEGORIES[item.category] || CATEGORIES.other;
-            const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
-            const LocationIcon = loc.icon;
-            const expiryInfo = getExpiryInfo(item.expiry_date);
-            
-            return (
-              <div 
-                key={item.id}
-                className={cn(
-                  "rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer",
-                  item.status === "out_of_stock" ? "bg-gradient-to-br from-red-50 to-red-100 border-red-400 shadow-red-200" :
-                  item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
-                  item.status === "low" ? "border-amber-200 bg-amber-50/50" :
-                  "bg-white border-slate-100"
-                )}
-                onClick={() => openEdit(item)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", cat.color)}>
-                    <Package className="w-6 h-6" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-slate-800">{item.name}</p>
-                      {item.is_staple && (
-                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm">
-                          <Star className="w-3 h-3 ml-1 fill-white" />
-                          פריט חובה
-                        </Badge>
-                      )}
-                      {item.status === "out_of_stock" && (
-                        <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white text-xs shadow-lg shadow-red-500/50">
-                          🚨 נגמר!
-                        </Badge>
-                      )}
-                      {item.status === "expired" && (
-                        <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
-                      )}
-                      {item.status === "low" && (
-                        <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
-                      )}
-                      {item.tags?.map((tag, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                          <Tag className="w-3 h-3 ml-1" />
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <LocationIcon className="w-3 h-3" />
-                        {loc.label}
-                      </span>
-                      {expiryInfo && (
-                        <span className={cn("px-2 py-0.5 rounded-full text-xs", expiryInfo.color)}>
-                          תפוגה: {expiryInfo.text}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {item.status !== "out_of_stock" && (
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => updateQuantity(item, -1)}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <span className="w-16 text-center font-semibold">
-                        {item.quantity} {UNITS[item.unit]}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => updateQuantity(item, 1)}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      onClick={() => markAsFinished(item)}
-                      className="h-8 bg-red-500 hover:bg-red-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                      title="נגמר - הוסף לקניות"
-                    >
-                      נגמר
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => addToShoppingList(item)}
-                      className="text-slate-400 hover:text-blue-500"
-                      title="הוסף לרשימת קניות"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteMutation.mutate(item.id)}
-                      className="text-slate-400 hover:text-rose-500"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-                    );
-                  })}
+                   const cat = CATEGORIES[item.category] || CATEGORIES.other;
+                   const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
+                   const LocationIcon = loc.icon;
+                   const expiryInfo = getExpiryInfo(item.expiry_date);
+                   const isExpanded = expandedItems[item.id];
+                   
+                   return (
+                     <Collapsible
+                       key={item.id}
+                       open={isExpanded}
+                       onOpenChange={(open) => setExpandedItems({...expandedItems, [item.id]: open})}
+                     >
+                       <CollapsibleTrigger asChild>
+                         <div 
+                           className={cn(
+                             "rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer flex items-center gap-4",
+                             item.status === "out_of_stock" ? "bg-gradient-to-br from-red-50 to-red-100 border-red-400 shadow-red-200" :
+                             item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
+                             item.status === "low" ? "border-amber-200 bg-amber-50/50" :
+                             "bg-white border-slate-100"
+                           )}
+                         >
+                           <ChevronDown className={cn("w-5 h-5 transition-transform flex-shrink-0", isExpanded && "rotate-180")} />
+                           <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0", cat.color)}>
+                             <Package className="w-6 h-6" />
+                           </div>
+                           
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <p className="font-semibold text-slate-800">{item.name}</p>
+                               {item.is_staple && (
+                                 <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm">
+                                   <Star className="w-3 h-3 ml-1 fill-white" />
+                                   פריט חובה
+                                 </Badge>
+                               )}
+                               {item.status === "out_of_stock" && (
+                                 <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white text-xs shadow-lg shadow-red-500/50">
+                                   🚨 נגמר!
+                                 </Badge>
+                               )}
+                             </div>
+                           </div>
+                         </div>
+                       </CollapsibleTrigger>
+                       <CollapsibleContent className="pt-2">
+                         <div className="pl-12 space-y-3">
+                           {item.status === "expired" && (
+                             <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
+                           )}
+                           {item.status === "low" && (
+                             <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
+                           )}
+                           {expiryInfo && (
+                             <div className={cn("px-2 py-0.5 rounded-full text-xs inline-block", expiryInfo.color)}>
+                               תפוגה: {expiryInfo.text}
+                             </div>
+                           )}
+                           {item.tags?.length > 0 && (
+                             <div className="flex flex-wrap gap-2">
+                               {item.tags.map((tag, idx) => (
+                                 <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                   <Tag className="w-3 h-3 ml-1" />
+                                   {tag}
+                                 </Badge>
+                               ))}
+                             </div>
+                           )}
+                           {item.status !== "out_of_stock" && (
+                             <div className="flex items-center gap-2">
+                               <Button
+                                 variant="outline"
+                                 size="icon"
+                                 className="h-8 w-8"
+                                 onClick={() => updateQuantity(item, -1)}
+                               >
+                                 <Minus className="w-4 h-4" />
+                               </Button>
+                               <span className="w-16 text-center font-semibold">
+                                 {item.quantity} {UNITS[item.unit]}
+                               </span>
+                               <Button
+                                 variant="outline"
+                                 size="icon"
+                                 className="h-8 w-8"
+                                 onClick={() => updateQuantity(item, 1)}
+                               >
+                                 <Plus className="w-4 h-4" />
+                               </Button>
+                             </div>
+                           )}
+                           <div className="flex items-center gap-1 pt-2">
+                             <Button
+                               onClick={() => markAsFinished(item)}
+                               className="h-8 bg-red-500 hover:bg-red-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                               title="נגמר - הוסף לקניות"
+                             >
+                               נגמר
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               onClick={() => addToShoppingList(item)}
+                               className="text-slate-400 hover:text-blue-500"
+                               title="הוסף לרשימת קניות"
+                             >
+                               <ShoppingCart className="w-4 h-4" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               onClick={() => deleteMutation.mutate(item.id)}
+                               className="text-slate-400 hover:text-rose-500"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </Button>
+                           </div>
+                         </div>
+                       </CollapsibleContent>
+                     </Collapsible>
+                   );
+                 })}
               </div>
             )}
           </TabsContent>

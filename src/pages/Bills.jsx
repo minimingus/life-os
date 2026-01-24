@@ -75,6 +75,8 @@ export default function Bills() {
   const [activeTab, setActiveTab] = useState("bills");
   const [showInquiryDialog, setShowInquiryDialog] = useState(false);
   const [editInquiry, setEditInquiry] = useState(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [editReport, setEditReport] = useState(null);
   const [formData, setFormData] = useState({
     type: "electricity",
     amount: "",

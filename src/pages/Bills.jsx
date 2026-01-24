@@ -13,6 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -35,7 +37,12 @@ import {
   CheckCircle2,
   Upload,
   ExternalLink,
-  Calendar
+  Calendar,
+  FileText,
+  MessageSquare,
+  Plus,
+  Clock,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isBefore, addDays } from "date-fns";
@@ -52,11 +59,21 @@ const BILL_TYPES = {
   other: { label: "אחר", icon: HelpCircle, color: "bg-slate-100 text-slate-600" }
 };
 
+const INQUIRY_STATUS = {
+  open: { label: "פתוח", icon: Clock, color: "bg-amber-100 text-amber-600" },
+  in_progress: { label: "בטיפול", icon: Loader2, color: "bg-blue-100 text-blue-600" },
+  resolved: { label: "נפתר", icon: CheckCircle2, color: "bg-green-100 text-green-600" },
+  closed: { label: "סגור", icon: CheckCircle2, color: "bg-slate-100 text-slate-600" }
+};
+
 export default function Bills() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [filterType, setFilterType] = useState("all");
   const [filterPaid, setFilterPaid] = useState("all");
+  const [activeTab, setActiveTab] = useState("bills");
+  const [showInquiryDialog, setShowInquiryDialog] = useState(false);
+  const [editInquiry, setEditInquiry] = useState(null);
   const [formData, setFormData] = useState({
     type: "electricity",
     amount: "",
@@ -67,11 +84,29 @@ export default function Bills() {
     file_url: ""
   });
 
+  const [inquiryFormData, setInquiryFormData] = useState({
+    type: "electricity",
+    title: "",
+    description: "",
+    amount_in_question: "",
+    status: "open",
+    contact_name: "",
+    contact_phone: "",
+    opened_date: format(new Date(), "yyyy-MM-dd"),
+    notes: "",
+    file_url: ""
+  });
+
   const queryClient = useQueryClient();
 
   const { data: bills = [], isLoading } = useQuery({
     queryKey: ["bills"],
     queryFn: () => base44.entities.Bill.list("-created_date")
+  });
+
+  const { data: inquiries = [] } = useQuery({
+    queryKey: ["inquiries"],
+    queryFn: () => base44.entities.BillInquiry.list("-created_date")
   });
 
   const createMutation = useMutation({
@@ -95,6 +130,27 @@ export default function Bills() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bills"] })
   });
 
+  const createInquiryMutation = useMutation({
+    mutationFn: (data) => base44.entities.BillInquiry.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiries"] });
+      resetInquiryForm();
+    }
+  });
+
+  const updateInquiryMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.BillInquiry.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiries"] });
+      resetInquiryForm();
+    }
+  });
+
+  const deleteInquiryMutation = useMutation({
+    mutationFn: (id) => base44.entities.BillInquiry.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inquiries"] })
+  });
+
   const resetForm = () => {
     setShowDialog(false);
     setEditItem(null);
@@ -104,6 +160,23 @@ export default function Bills() {
       billing_period: "",
       due_date: "",
       is_paid: false,
+      notes: "",
+      file_url: ""
+    });
+  };
+
+  const resetInquiryForm = () => {
+    setShowInquiryDialog(false);
+    setEditInquiry(null);
+    setInquiryFormData({
+      type: "electricity",
+      title: "",
+      description: "",
+      amount_in_question: "",
+      status: "open",
+      contact_name: "",
+      contact_phone: "",
+      opened_date: format(new Date(), "yyyy-MM-dd"),
       notes: "",
       file_url: ""
     });
@@ -157,6 +230,48 @@ export default function Bills() {
     }
   };
 
+  const handleInquiryFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setInquiryFormData({ ...inquiryFormData, file_url });
+    }
+  };
+
+  const handleInquirySubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      ...inquiryFormData,
+      amount_in_question: inquiryFormData.amount_in_question ? parseFloat(inquiryFormData.amount_in_question) : null,
+      resolved_date: inquiryFormData.status === "resolved" || inquiryFormData.status === "closed" 
+        ? format(new Date(), "yyyy-MM-dd") 
+        : null
+    };
+    
+    if (editInquiry) {
+      updateInquiryMutation.mutate({ id: editInquiry.id, data });
+    } else {
+      createInquiryMutation.mutate(data);
+    }
+  };
+
+  const openEditInquiry = (inquiry) => {
+    setEditInquiry(inquiry);
+    setInquiryFormData({
+      type: inquiry.type || "electricity",
+      title: inquiry.title || "",
+      description: inquiry.description || "",
+      amount_in_question: inquiry.amount_in_question || "",
+      status: inquiry.status || "open",
+      contact_name: inquiry.contact_name || "",
+      contact_phone: inquiry.contact_phone || "",
+      opened_date: inquiry.opened_date || format(new Date(), "yyyy-MM-dd"),
+      notes: inquiry.notes || "",
+      file_url: inquiry.file_url || ""
+    });
+    setShowInquiryDialog(true);
+  };
+
   let filteredBills = bills;
   if (filterType !== "all") {
     filteredBills = filteredBills.filter(b => b.type === filterType);
@@ -189,17 +304,42 @@ export default function Bills() {
     return null;
   };
 
+  const openInquiries = inquiries.filter(i => i.status === "open" || i.status === "in_progress");
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="חשבונות"
-        subtitle={`${unpaidBills.length} חשבונות לתשלום`}
-        action={() => setShowDialog(true)}
-        actionLabel="הוסף חשבון"
+        title="ניהול חשבונות ותשלומים"
+        subtitle="חשבונות, בירורים ודוחות"
       />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="bills">
+            <Receipt className="w-4 h-4 ml-2" />
+            חשבונות ({unpaidBills.length})
+          </TabsTrigger>
+          <TabsTrigger value="inquiries">
+            <MessageSquare className="w-4 h-4 ml-2" />
+            בירורים ({openInquiries.length})
+          </TabsTrigger>
+          <TabsTrigger value="reports">
+            <FileText className="w-4 h-4 ml-2" />
+            דוחות
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Bills Tab */}
+        <TabsContent value="bills" className="space-y-6 mt-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowDialog(true)} className="bg-blue-500 hover:bg-blue-600">
+              <Plus className="w-4 h-4 ml-2" />
+              הוסף חשבון
+            </Button>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-slate-100 p-4">
           <p className="text-sm text-slate-500">סה"כ לתשלום</p>
           <p className="text-2xl font-bold text-slate-800 mt-1">₪{totalUnpaid.toLocaleString()}</p>
@@ -366,8 +506,144 @@ export default function Bills() {
           })}
         </div>
       )}
+        </TabsContent>
 
-      {/* Add/Edit Dialog */}
+        {/* Inquiries Tab */}
+        <TabsContent value="inquiries" className="space-y-6 mt-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowInquiryDialog(true)} className="bg-blue-500 hover:bg-blue-600">
+              <Plus className="w-4 h-4 ml-2" />
+              פתח בירור
+            </Button>
+          </div>
+
+          {inquiries.length === 0 ? (
+            <EmptyState
+              icon={MessageSquare}
+              title="אין בירורים"
+              description="כל הבירורים על חשבונות יופיעו כאן"
+              action={() => setShowInquiryDialog(true)}
+              actionLabel="פתח בירור"
+            />
+          ) : (
+            <div className="grid gap-3">
+              {inquiries.map(inquiry => {
+                const typeConfig = BILL_TYPES[inquiry.type] || BILL_TYPES.other;
+                const TypeIcon = typeConfig.icon;
+                const statusConfig = INQUIRY_STATUS[inquiry.status] || INQUIRY_STATUS.open;
+                const StatusIcon = statusConfig.icon;
+                
+                return (
+                  <div 
+                    key={inquiry.id}
+                    className={cn(
+                      "bg-white rounded-2xl border p-5 hover:shadow-md transition-all cursor-pointer",
+                      inquiry.status === "resolved" || inquiry.status === "closed" ? "opacity-60" : "border-slate-100"
+                    )}
+                    onClick={() => openEditInquiry(inquiry)}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", typeConfig.color)}>
+                        <TypeIcon className="w-6 h-6" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-slate-800">{inquiry.title}</h3>
+                            {inquiry.description && (
+                              <p className="text-sm text-slate-600 mt-1 line-clamp-2">{inquiry.description}</p>
+                            )}
+                          </div>
+                          <Badge className={cn(statusConfig.color, "border-0 flex-shrink-0")}>
+                            <StatusIcon className={cn("w-3 h-3 ml-1", inquiry.status === "in_progress" && "animate-spin")} />
+                            {statusConfig.label}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 mt-3 text-sm text-slate-500">
+                          {inquiry.amount_in_question && (
+                            <span className="font-medium text-orange-600">סכום במחלוקת: ₪{inquiry.amount_in_question.toLocaleString()}</span>
+                          )}
+                          {inquiry.contact_name && (
+                            <span>איש קשר: {inquiry.contact_name}</span>
+                          )}
+                          {inquiry.opened_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {format(parseISO(inquiry.opened_date), "dd/MM/yyyy")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteInquiryMutation.mutate(inquiry.id);
+                        }}
+                        className="text-slate-400 hover:text-rose-500 flex-shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="space-y-6 mt-6">
+          <div className="grid gap-4">
+            <div className="bg-white rounded-2xl border border-slate-100 p-6">
+              <h3 className="font-semibold text-slate-800 mb-4">סיכום חודשי</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-blue-50 rounded-xl">
+                  <p className="text-sm text-slate-600">סה"כ שולם החודש</p>
+                  <p className="text-2xl font-bold text-blue-600 mt-1">
+                    ₪{bills.filter(b => b.is_paid && b.paid_date && b.paid_date.startsWith(format(new Date(), "yyyy-MM"))).reduce((sum, b) => sum + (b.amount || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-4 bg-amber-50 rounded-xl">
+                  <p className="text-sm text-slate-600">ממוצע חודשי</p>
+                  <p className="text-2xl font-bold text-amber-600 mt-1">
+                    ₪{Math.round(bills.filter(b => b.is_paid).reduce((sum, b) => sum + (b.amount || 0), 0) / Math.max(bills.filter(b => b.is_paid).length, 1)).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-100 p-6">
+              <h3 className="font-semibold text-slate-800 mb-4">פירוט לפי סוג</h3>
+              <div className="space-y-3">
+                {Object.entries(BILL_TYPES).map(([key, { label, icon: Icon, color }]) => {
+                  const typeBills = bills.filter(b => b.type === key);
+                  const total = typeBills.reduce((sum, b) => sum + (b.amount || 0), 0);
+                  if (total === 0) return null;
+                  
+                  return (
+                    <div key={key} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", color)}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <span className="font-medium text-slate-700">{label}</span>
+                      </div>
+                      <span className="font-bold text-slate-800">₪{total.toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Add/Edit Bill Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
@@ -486,6 +762,162 @@ export default function Bills() {
                 {editItem ? "עדכן" : "הוסף"}
               </Button>
               <Button type="button" variant="outline" onClick={resetForm}>
+                ביטול
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Inquiry Dialog */}
+      <Dialog open={showInquiryDialog} onOpenChange={setShowInquiryDialog}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{editInquiry ? "עריכת בירור" : "פתיחת בירור חדש"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleInquirySubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700">סוג החשבון</label>
+              <Select
+                value={inquiryFormData.type}
+                onValueChange={(v) => setInquiryFormData({ ...inquiryFormData, type: v })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(BILL_TYPES).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">כותרת הבירור</label>
+              <Input
+                value={inquiryFormData.title}
+                onChange={(e) => setInquiryFormData({ ...inquiryFormData, title: e.target.value })}
+                placeholder="למשל: חיוב כפול בחשבון המים"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">תיאור הבעיה</label>
+              <Textarea
+                value={inquiryFormData.description}
+                onChange={(e) => setInquiryFormData({ ...inquiryFormData, description: e.target.value })}
+                placeholder="פרט את הבעיה והסיבה לבירור..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">סכום במחלוקת (₪)</label>
+                <Input
+                  type="number"
+                  value={inquiryFormData.amount_in_question}
+                  onChange={(e) => setInquiryFormData({ ...inquiryFormData, amount_in_question: e.target.value })}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">סטטוס</label>
+                <Select
+                  value={inquiryFormData.status}
+                  onValueChange={(v) => setInquiryFormData({ ...inquiryFormData, status: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(INQUIRY_STATUS).map(([key, { label }]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">שם איש קשר</label>
+                <Input
+                  value={inquiryFormData.contact_name}
+                  onChange={(e) => setInquiryFormData({ ...inquiryFormData, contact_name: e.target.value })}
+                  placeholder="למשל: משה כהן"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">טלפון</label>
+                <Input
+                  value={inquiryFormData.contact_phone}
+                  onChange={(e) => setInquiryFormData({ ...inquiryFormData, contact_phone: e.target.value })}
+                  placeholder="050-1234567"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">הערות והתפתחויות</label>
+              <Textarea
+                value={inquiryFormData.notes}
+                onChange={(e) => setInquiryFormData({ ...inquiryFormData, notes: e.target.value })}
+                placeholder="הוסף הערות, מעקב אחר שיחות וכו'..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            {/* File Upload */}
+            <div>
+              <label className="text-sm font-medium text-slate-700">קובץ מסמך</label>
+              {inquiryFormData.file_url ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <a 
+                    href={inquiryFormData.file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-600 text-sm"
+                  >
+                    צפה בקובץ
+                  </a>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInquiryFormData({ ...inquiryFormData, file_url: "" })}
+                    className="text-rose-500"
+                  >
+                    הסר
+                  </Button>
+                </div>
+              ) : (
+                <label className="mt-2 flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={handleInquiryFileUpload}
+                  />
+                  <Upload className="w-5 h-5 text-slate-400" />
+                  <span className="text-sm text-slate-500">העלה קובץ</span>
+                </label>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600">
+                {editInquiry ? "עדכן" : "פתח בירור"}
+              </Button>
+              <Button type="button" variant="outline" onClick={resetInquiryForm}>
                 ביטול
               </Button>
             </div>

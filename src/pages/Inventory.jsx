@@ -33,7 +33,8 @@ import {
   X,
   Star,
   FileUp,
-  Loader2
+  Loader2,
+  Tag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, isBefore } from "date-fns";
@@ -84,8 +85,10 @@ export default function Inventory() {
     location: "fridge",
     min_quantity: 0,
     status: "ok",
-    is_staple: false
+    is_staple: false,
+    tags: []
   });
+  const [newTag, setNewTag] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -134,8 +137,10 @@ export default function Inventory() {
       location: "fridge",
       min_quantity: 0,
       status: "ok",
-      is_staple: false
+      is_staple: false,
+      tags: []
     });
+    setNewTag("");
   };
 
   const handleSubmit = (e) => {
@@ -307,9 +312,21 @@ export default function Inventory() {
       location: item.location || "fridge",
       min_quantity: item.min_quantity || 0,
       status: item.status || "ok",
-      is_staple: item.is_staple || false
+      is_staple: item.is_staple || false,
+      tags: item.tags || []
     });
     setShowDialog(true);
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      setFormData({ ...formData, tags: [...formData.tags, newTag.trim()] });
+      setNewTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setFormData({ ...formData, tags: formData.tags.filter(t => t !== tagToRemove) });
   };
 
   let filteredItems = filterLocation === "all"
@@ -445,7 +462,7 @@ export default function Inventory() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-slate-800">{item.name}</p>
                       {item.is_staple && (
                         <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
@@ -456,6 +473,12 @@ export default function Inventory() {
                       {item.status === "low" && (
                         <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
                       )}
+                      {item.tags?.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          <Tag className="w-3 h-3 ml-1" />
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
                       <span className="flex items-center gap-1">
@@ -643,6 +666,39 @@ export default function Inventory() {
                   <Star className="w-4 h-4 text-amber-500" />
                   פריט בסיסי (חייב להיות תמיד במלאי)
                 </label>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700">תגיות</label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    placeholder='לדוגמא: "הכרחי לסופ\'ש"'
+                    className="flex-1"
+                  />
+                  <Button type="button" onClick={addTag} variant="outline" size="sm">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                {formData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {formData.tags.map((tag, idx) => (
+                      <Badge key={idx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Tag className="w-3 h-3 ml-1" />
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="mr-1 hover:text-blue-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">

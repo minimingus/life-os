@@ -788,7 +788,7 @@ export default function Bills() {
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-100 p-6">
-              <h3 className="font-semibold text-slate-800 mb-4">פירוט לפי סוג</h3>
+                <h3 className="font-semibold text-slate-800 mb-4">פירוט לפי סוג</h3>
               <div className="space-y-3">
                 {Object.entries(BILL_TYPES).map(([key, { label, icon: Icon, color }]) => {
                   const typeBills = bills.filter(b => b.type === key);

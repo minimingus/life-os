@@ -85,7 +85,9 @@ export default function Repairs() {
     photos: [],
     work_type: "diy",
     funding: "self",
-    sub_status: null
+    sub_status: null,
+    family_member_id: "",
+    family_member_name: ""
   });
 
   const queryClient = useQueryClient();
@@ -94,6 +96,13 @@ export default function Repairs() {
     queryKey: ["repairs"],
     queryFn: () => base44.entities.Repair.list("-created_date")
   });
+
+  const { data: familyMembers = [] } = useQuery({
+    queryKey: ["family"],
+    queryFn: () => base44.entities.FamilyMember.list()
+  });
+
+  const parents = familyMembers.filter(m => m.role === "parent");
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Repair.create(data),
@@ -135,7 +144,9 @@ export default function Repairs() {
       photos: [],
       work_type: "diy",
       funding: "self",
-      sub_status: null
+      sub_status: null,
+      family_member_id: "",
+      family_member_name: ""
     });
   };
 
@@ -168,7 +179,9 @@ export default function Repairs() {
       photos: item.photos || [],
       work_type: item.work_type || "diy",
       funding: item.funding || "self",
-      sub_status: item.sub_status || null
+      sub_status: item.sub_status || null,
+      family_member_id: item.family_member_id || "",
+      family_member_name: item.family_member_name || ""
     });
     setShowDialog(true);
   };
@@ -454,6 +467,12 @@ export default function Repairs() {
                           {repair.photos.length} תמונות
                         </span>
                       )}
+                      {repair.family_member_name && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {repair.family_member_name}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -646,6 +665,31 @@ export default function Repairs() {
                 </Select>
               </div>
             )}
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">הורה אחראי</label>
+              <Select
+                value={formData.family_member_id}
+                onValueChange={(v) => {
+                  const parent = parents.find(p => p.id === v);
+                  setFormData({ 
+                    ...formData, 
+                    family_member_id: v,
+                    family_member_name: parent?.name || ""
+                  });
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="בחר הורה (אופציונלי)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>ללא שיוך</SelectItem>
+                  {parents.map(parent => (
+                    <SelectItem key={parent.id} value={parent.id}>{parent.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>

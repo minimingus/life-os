@@ -132,7 +132,10 @@ export default function SchoolSchedule() {
 
   // סינון לפי בן משפחה נבחר
   const filteredSchedule = selectedMember
-    ? scheduleItems.filter(item => item.family_member_id === selectedMember)
+    ? scheduleItems.filter(item => 
+        item.family_member_id === selectedMember || 
+        item.family_member_name === familyMembers.find(m => m.id === selectedMember)?.name
+      )
     : scheduleItems;
 
   // ארגון מערכת השעות לפי יום ושיעור
@@ -153,7 +156,10 @@ export default function SchoolSchedule() {
     <div className="space-y-6">
       <PageHeader
         title="מערכת שעות"
-        subtitle="מערכת השעות השבועית של בית הספר"
+        subtitle={selectedMember 
+          ? `מערכת השעות של ${familyMembers.find(m => m.id === selectedMember)?.name || ''}`
+          : "בחר ילד כדי להציג את מערכת השעות שלו"
+        }
         action={() => {
           setFormData({
             ...formData,
@@ -165,12 +171,12 @@ export default function SchoolSchedule() {
         actionLabel="הוסף שיעור"
       >
         {children.length > 0 && (
-          <Select value={selectedMember || "all"} onValueChange={(v) => setSelectedMember(v === "all" ? null : v)}>
+          <Select value={selectedMember || "none"} onValueChange={(v) => setSelectedMember(v === "none" ? null : v)}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="בחר ילד" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">כל הילדים</SelectItem>
+              <SelectItem value="none">בחר ילד</SelectItem>
               {children.map(child => (
                 <SelectItem key={child.id} value={child.id}>
                   {child.name}
@@ -182,8 +188,17 @@ export default function SchoolSchedule() {
       </PageHeader>
 
       {/* לוח מערכת השעות */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+      {!selectedMember ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+          <div className="text-slate-400 mb-2">
+            <BookOpen className="w-12 h-12 mx-auto mb-3" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-700 mb-2">בחר ילד להצגת מערכת השעות</h3>
+          <p className="text-slate-500">כל ילד במשפחה מנהל מערכת שעות נפרדת משלו</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse" dir="rtl">
             <thead>
               <tr className="bg-gradient-to-l from-blue-50 to-indigo-50">
@@ -248,6 +263,7 @@ export default function SchoolSchedule() {
           </table>
         </div>
       </div>
+      )}
 
       {/* מקרא */}
       <div className="bg-white rounded-xl border border-slate-200 p-4">

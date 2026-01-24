@@ -29,10 +29,13 @@ import {
   CalendarDays,
   Clock,
   GraduationCap,
-  Dumbbell
+  Dumbbell,
+  X,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInYears } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const COLORS = [
   { value: "#3b82f6", label: "כחול" },
@@ -45,6 +48,15 @@ const COLORS = [
   { value: "#f97316", label: "כתום כהה" }
 ];
 
+const RESPONSIBILITIES = [
+  { value: "קניות", label: "קניות", color: "bg-blue-100 text-blue-700" },
+  { value: "בישול", label: "בישול", color: "bg-orange-100 text-orange-700" },
+  { value: "ניקיון", label: "ניקיון", color: "bg-green-100 text-green-700" },
+  { value: "כביסה", label: "כביסה", color: "bg-purple-100 text-purple-700" },
+  { value: "טיפול בילדים", label: "טיפול בילדים", color: "bg-pink-100 text-pink-700" },
+  { value: "תחזוקה", label: "תחזוקה", color: "bg-red-100 text-red-700" }
+];
+
 export default function Family() {
   const [showDialog, setShowDialog] = useState(false);
   const [showMemberView, setShowMemberView] = useState(false);
@@ -55,7 +67,8 @@ export default function Family() {
     role: "child",
     birth_date: "",
     color: "#3b82f6",
-    avatar: ""
+    avatar: "",
+    responsibilities: []
   });
 
   const queryClient = useQueryClient();
@@ -91,7 +104,8 @@ export default function Family() {
       role: "child",
       birth_date: "",
       color: "#3b82f6",
-      avatar: ""
+      avatar: "",
+      responsibilities: []
     });
   };
 
@@ -111,9 +125,19 @@ export default function Family() {
       role: item.role || "child",
       birth_date: item.birth_date || "",
       color: item.color || "#3b82f6",
-      avatar: item.avatar || ""
+      avatar: item.avatar || "",
+      responsibilities: item.responsibilities || []
     });
     setShowDialog(true);
+  };
+
+  const toggleResponsibility = (responsibility) => {
+    setFormData({
+      ...formData,
+      responsibilities: formData.responsibilities.includes(responsibility)
+        ? formData.responsibilities.filter(r => r !== responsibility)
+        : [...formData.responsibilities, responsibility]
+    });
   };
 
   const handleAvatarUpload = async (e) => {
@@ -310,6 +334,27 @@ export default function Family() {
                     )}
                     style={{ backgroundColor: value }}
                   />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-3 block">תחומי אחריות</label>
+              <div className="flex flex-wrap gap-2">
+                {RESPONSIBILITIES.map(({ value, label, color }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => toggleResponsibility(value)}
+                    className={cn(
+                      "px-3 py-2 rounded-lg font-medium text-sm transition-all border-2",
+                      formData.responsibilities.includes(value)
+                        ? `${color} border-current`
+                        : "bg-slate-100 text-slate-600 border-slate-200"
+                    )}
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
             </div>
@@ -541,6 +586,18 @@ function MemberCard({ member, onEdit, onView, getAge }) {
             {member.role === "parent" ? "הורה" : "ילד/ה"}
             {age !== null && ` • גיל ${age}`}
           </p>
+          {member.responsibilities && member.responsibilities.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {member.responsibilities.map((resp) => {
+                const respConfig = RESPONSIBILITIES.find(r => r.value === resp);
+                return (
+                  <Badge key={resp} className={cn("text-xs", respConfig?.color)}>
+                    {respConfig?.label || resp}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
           {member.birth_date && (
             <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
               <Calendar className="w-3 h-3" />

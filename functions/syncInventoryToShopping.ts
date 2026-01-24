@@ -58,6 +58,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Find responsible family member
+    let assignedToId = null;
+    let assignedToName = null;
+
+    if (shouldAdd) {
+      const allMembers = await base44.entities.FamilyMember.list();
+      const shopperMember = allMembers.find(m => 
+        m.responsibilities && m.responsibilities.includes('קניות')
+      );
+
+      if (shopperMember) {
+        assignedToId = shopperMember.id;
+        assignedToName = shopperMember.name;
+      }
+    }
+
     // Update or create shopping item
     if (shouldAdd) {
       if (existingItems.length > 0) {
@@ -67,9 +83,11 @@ Deno.serve(async (req) => {
           ...existing,
           quantity: inventoryItem.quantity || 1,
           reason,
-          priority: inventoryItem.is_staple ? 'high' : 'medium'
+          priority: inventoryItem.is_staple ? 'high' : 'medium',
+          assigned_to_id: assignedToId,
+          assigned_to_name: assignedToName
         });
-        return Response.json({ action: 'updated', id: existing.id });
+        return Response.json({ action: 'updated', id: existing.id, assignedToId });
       } else {
         // Create new
         const newItem = await base44.entities.ShoppingItem.create({
@@ -80,13 +98,15 @@ Deno.serve(async (req) => {
           priority: inventoryItem.is_staple ? 'high' : 'medium',
           inventory_item_id: inventory_item_id,
           reason,
+          assigned_to_id: assignedToId,
+          assigned_to_name: assignedToName,
           notes: `נוסף אוטומטית - ${
             reason === 'out_of_stock' ? 'נגמר במלאי' :
             reason === 'low_stock' ? 'מלאי נמוך' :
             'מתקרב לתאריך תפוגה'
           }`
         });
-        return Response.json({ action: 'created', id: newItem.id });
+        return Response.json({ action: 'created', id: newItem.id, assignedToId });
       }
     } else {
       // If item is back in stock and has no warning, optionally remove from shopping list

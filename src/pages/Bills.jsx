@@ -808,10 +808,10 @@ export default function Bills() {
                    );
                  })}
                </div>
-            </div>
-          </div>
-          )}
-        </TabsContent>
+               </div>
+               </div>
+               )}
+               </TabsContent>
       </Tabs>
 
       {/* Add/Edit Bill Dialog */}

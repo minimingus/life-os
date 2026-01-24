@@ -208,7 +208,7 @@ export default function Shopping() {
                       key={item.id}
                       className={cn(
                         "flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors cursor-pointer",
-                        isAutoAdded && "bg-gradient-to-r from-red-50 to-orange-50 border-r-4 border-red-500 animate-pulse"
+                        isAutoAdded && "bg-gradient-to-r from-red-50 to-orange-50 border-r-4 border-red-500"
                       )}
                       onClick={() => openEdit(item)}
                     >

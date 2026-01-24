@@ -166,6 +166,24 @@ export default function Inventory() {
     });
   };
 
+  const markAsFinished = (item) => {
+    // Set quantity to 0
+    const status = "low";
+    updateMutation.mutate({ 
+      id: item.id, 
+      data: { ...item, quantity: 0, status } 
+    });
+    
+    // Add to shopping list
+    createShoppingMutation.mutate({
+      name: item.name,
+      category: item.category,
+      quantity: item.quantity || 1,
+      unit: item.unit,
+      priority: "high"
+    });
+  };
+
   const openEdit = (item) => {
     setEditItem(item);
     setFormData({

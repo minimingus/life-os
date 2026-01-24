@@ -30,7 +30,11 @@ import {
   Package,
   MapPin,
   Camera,
-  Upload
+  Upload,
+  Hammer,
+  HardHat,
+  User,
+  Building
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -63,7 +67,9 @@ export default function Repairs() {
     status: "pending",
     estimated_cost: "",
     due_date: "",
-    photos: []
+    photos: [],
+    work_type: "diy",
+    funding: "self"
   });
 
   const queryClient = useQueryClient();
@@ -105,7 +111,9 @@ export default function Repairs() {
       status: "pending",
       estimated_cost: "",
       due_date: "",
-      photos: []
+      photos: [],
+      work_type: "diy",
+      funding: "self"
     });
   };
 
@@ -135,7 +143,9 @@ export default function Repairs() {
       estimated_cost: item.estimated_cost || "",
       actual_cost: item.actual_cost || "",
       due_date: item.due_date || "",
-      photos: item.photos || []
+      photos: item.photos || [],
+      work_type: item.work_type || "diy",
+      funding: item.funding || "self"
     });
     setShowDialog(true);
   };
@@ -336,6 +346,55 @@ export default function Repairs() {
                       <p className="text-sm text-slate-600 mt-3 line-clamp-2">{repair.description}</p>
                     )}
                     
+                    {/* Work Type & Funding */}
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      {repair.work_type && (
+                        <Badge variant="outline" className={cn(
+                          "border",
+                          repair.work_type === "diy" 
+                            ? "bg-blue-50 border-blue-200 text-blue-700" 
+                            : "bg-purple-50 border-purple-200 text-purple-700"
+                        )}>
+                          {repair.work_type === "diy" ? (
+                            <>
+                              <Hammer className="w-3 h-3 ml-1" />
+                              עשה זאת בעצמך
+                            </>
+                          ) : (
+                            <>
+                              <HardHat className="w-3 h-3 ml-1" />
+                              דורש איש מקצוע
+                            </>
+                          )}
+                        </Badge>
+                      )}
+                      {repair.funding && (
+                        <Badge variant="outline" className={cn(
+                          "border",
+                          repair.funding === "landlord"
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : "bg-slate-50 border-slate-200 text-slate-700"
+                        )}>
+                          {repair.funding === "landlord" ? (
+                            <>
+                              <Building className="w-3 h-3 ml-1" />
+                              על חשבון בעל הדירה
+                            </>
+                          ) : (
+                            <>
+                              <User className="w-3 h-3 ml-1" />
+                              מימון עצמי
+                            </>
+                          )}
+                        </Badge>
+                      )}
+                    </div>
+                    </div>
+                    
+                    {repair.description && (
+                      <p className="text-sm text-slate-600 mt-3 line-clamp-2">{repair.description}</p>
+                    )}
+                    
                     <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
                       {repair.estimated_cost && (
                         <span>עלות משוערת: ₪{repair.estimated_cost}</span>
@@ -447,6 +506,39 @@ export default function Repairs() {
                     {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
                       <SelectItem key={key} value={key}>{label}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">סוג העבודה</label>
+                <Select
+                  value={formData.work_type}
+                  onValueChange={(v) => setFormData({ ...formData, work_type: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diy">עשה זאת בעצמך</SelectItem>
+                    <SelectItem value="professional">דורש איש מקצוע</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">מימון</label>
+                <Select
+                  value={formData.funding}
+                  onValueChange={(v) => setFormData({ ...formData, funding: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self">מימון עצמי</SelectItem>
+                    <SelectItem value="landlord">על חשבון בעל הדירה</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -31,10 +31,13 @@ import {
   Minus,
   ShoppingCart,
   X,
-  Star
+  Star,
+  FileUp,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, isBefore } from "date-fns";
+import { CheckCircle2 } from "lucide-react";
 
 const CATEGORIES = {
   fruits: { label: "פירות", color: "bg-red-100 text-red-600" },
@@ -68,6 +71,9 @@ export default function Inventory() {
   const [editItem, setEditItem] = useState(null);
   const [filterLocation, setFilterLocation] = useState("all");
   const [showStaplesOnly, setShowStaplesOnly] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [receiptResult, setReceiptResult] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     category: "other",
@@ -189,6 +195,106 @@ export default function Inventory() {
     });
   };
 
+  const handleReceiptUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingReceipt(true);
+    setReceiptResult(null);
+
+    try {
+      // Upload file
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      // Extract data using AI
+      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: {
+          type: "object",
+          properties: {
+            items: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  quantity: { type: "number" },
+                  unit: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (result.status === "success" && result.output?.items) {
+        setReceiptResult(result.output);
+        
+        // Update inventory
+        for (const item of result.output.items) {
+          // Try to find existing item by name
+          const existingItem = items.find(i => 
+            i.name.toLowerCase().includes(item.name.toLowerCase()) ||
+            item.name.toLowerCase().includes(i.name.toLowerCase())
+          );
+
+          if (existingItem) {
+            // Update existing item quantity
+            const newQuantity = (existingItem.quantity || 0) + (item.quantity || 1);
+            const status = getItemStatus({ ...existingItem, quantity: newQuantity });
+            await base44.entities.InventoryItem.update(existingItem.id, {
+              ...existingItem,
+              quantity: newQuantity,
+              status
+            });
+          } else {
+            // Create new item with smart defaults
+            const category = guessCategory(item.name);
+            const location = guessLocation(category);
+            await base44.entities.InventoryItem.create({
+              name: item.name,
+              quantity: item.quantity || 1,
+              unit: item.unit || "units",
+              category,
+              location,
+              status: "ok"
+            });
+          }
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      } else {
+        alert("לא הצלחנו לחלץ נתונים מהחשבונית. נסה שוב.");
+      }
+    } catch (error) {
+      console.error("Error processing receipt:", error);
+      alert("שגיאה בעיבוד החשבונית");
+    } finally {
+      setUploadingReceipt(false);
+    }
+  };
+
+  const guessCategory = (name) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes("עגבני") || lowerName.includes("מלפפון") || lowerName.includes("חסה")) return "vegetables";
+    if (lowerName.includes("תפוח") || lowerName.includes("בננה") || lowerName.includes("תפוז")) return "fruits";
+    if (lowerName.includes("חלב") || lowerName.includes("גבינה") || lowerName.includes("יוגורט") || lowerName.includes("ביצ")) return "dairy";
+    if (lowerName.includes("בשר") || lowerName.includes("עוף") || lowerName.includes("דג")) return "meat";
+    if (lowerName.includes("לחם") || lowerName.includes("לחמני") || lowerName.includes("פיתה")) return "bread";
+    if (lowerName.includes("קפוא") || lowerName.includes("גלידה")) return "frozen";
+    if (lowerName.includes("אורז") || lowerName.includes("פסטה") || lowerName.includes("קמח") || lowerName.includes("שמן")) return "pantry";
+    if (lowerName.includes("נקי") || lowerName.includes("סבון") || lowerName.includes("אקונומיקה")) return "cleaning";
+    return "other";
+  };
+
+  const guessLocation = (category) => {
+    if (["fruits", "vegetables", "dairy", "meat"].includes(category)) return "fridge";
+    if (category === "frozen") return "freezer";
+    if (["pantry", "cleaning", "other"].includes(category)) return "pantry";
+    if (category === "bread") return "cabinet";
+    return "pantry";
+  };
+
   const openEdit = (item) => {
     setEditItem(item);
     setFormData({
@@ -236,7 +342,16 @@ export default function Inventory() {
         subtitle={`${items.length} פריטים במלאי`}
         action={() => setShowDialog(true)}
         actionLabel="הוסף פריט"
-      />
+      >
+        <Button
+          variant="outline"
+          onClick={() => setShowReceiptDialog(true)}
+          className="border-blue-200 text-blue-600 hover:bg-blue-50"
+        >
+          <FileUp className="w-4 h-4 ml-2" />
+          העלה חשבונית
+        </Button>
+      </PageHeader>
 
       {/* Alert Badges */}
       {(expiredCount > 0 || lowCount > 0 || lowStapleCount > 0) && (
@@ -538,6 +653,80 @@ export default function Inventory() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Upload Dialog */}
+      <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>העלאת חשבונית קנייה</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-slate-600">
+              <p className="mb-2">העלה תמונה של חשבונית הקניות, והמערכת תעדכן את המלאי באופן אוטומטי.</p>
+              <ul className="list-disc list-inside space-y-1 text-slate-500">
+                <li>תמונה ברורה של החשבונית</li>
+                <li>המערכת תזהה פריטים קיימים ותוסיף חדשים</li>
+                <li>הכמויות יתעדכנו אוטומטית</li>
+              </ul>
+            </div>
+
+            {uploadingReceipt ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                <p className="text-slate-600">מעבד את החשבונית...</p>
+                <p className="text-sm text-slate-400 mt-1">זה יכול לקחת כמה שניות</p>
+              </div>
+            ) : receiptResult ? (
+              <div className="space-y-3">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+                    <CheckCircle2 className="w-5 h-5" />
+                    המלאי עודכן בהצלחה!
+                  </div>
+                  <p className="text-sm text-green-600">
+                    {receiptResult.items?.length || 0} פריטים עודכנו במלאי
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-700">פריטים שזוהו:</p>
+                  <div className="max-h-48 overflow-y-auto space-y-1">
+                    {receiptResult.items?.map((item, idx) => (
+                      <div key={idx} className="text-sm p-2 bg-slate-50 rounded">
+                        {item.name} - {item.quantity} {item.unit || "יחידות"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  className="w-full bg-blue-500 hover:bg-blue-600"
+                  onClick={() => {
+                    setShowReceiptDialog(false);
+                    setReceiptResult(null);
+                  }}
+                >
+                  סגור
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleReceiptUpload}
+                  />
+                  <div className="flex flex-col items-center">
+                    <FileUp className="w-12 h-12 text-slate-400 mb-3" />
+                    <p className="text-sm font-medium text-slate-700">העלה תמונת חשבונית</p>
+                    <p className="text-xs text-slate-500 mt-1">JPG, PNG או PDF</p>
+                  </div>
+                </label>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

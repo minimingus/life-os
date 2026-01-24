@@ -43,15 +43,25 @@ const STATUS_CONFIG = {
   completed: { label: "הושלם", color: "bg-green-100 text-green-600" }
 };
 
+const RANGE_CONFIG = {
+  short: { label: "טווח קצר", color: "bg-emerald-100 text-emerald-700" },
+  medium: { label: "טווח בינוני", color: "bg-blue-100 text-blue-700" },
+  long: { label: "טווח ארוך", color: "bg-purple-100 text-purple-700" }
+};
+
 export default function Projects() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterYear, setFilterYear] = useState("all");
+  const [filterRange, setFilterRange] = useState("all");
   const [newTask, setNewTask] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     status: "planning",
+    year: new Date().getFullYear(),
+    range: "medium",
     budget: "",
     spent: "",
     start_date: "",
@@ -96,6 +106,8 @@ export default function Projects() {
       title: "",
       description: "",
       status: "planning",
+      year: new Date().getFullYear(),
+      range: "medium",
       budget: "",
       spent: "",
       start_date: "",
@@ -109,6 +121,7 @@ export default function Projects() {
     e.preventDefault();
     const data = {
       ...formData,
+      year: formData.year ? parseInt(formData.year) : new Date().getFullYear(),
       budget: formData.budget ? parseFloat(formData.budget) : null,
       spent: formData.spent ? parseFloat(formData.spent) : null,
       completed_date: formData.status === "completed" ? format(new Date(), "yyyy-MM-dd") : null
@@ -127,6 +140,8 @@ export default function Projects() {
       title: item.title || "",
       description: item.description || "",
       status: item.status || "planning",
+      year: item.year || new Date().getFullYear(),
+      range: item.range || "medium",
       budget: item.budget || "",
       spent: item.spent || "",
       start_date: item.start_date || "",
@@ -168,9 +183,14 @@ export default function Projects() {
     }
   };
 
-  const filteredProjects = filterStatus === "all"
-    ? projects
-    : projects.filter(p => p.status === filterStatus);
+  const filteredProjects = projects.filter(p => {
+    if (filterStatus !== "all" && p.status !== filterStatus) return false;
+    if (filterYear !== "all" && p.year !== parseInt(filterYear)) return false;
+    if (filterRange !== "all" && p.range !== filterRange) return false;
+    return true;
+  });
+
+  const availableYears = [...new Set(projects.map(p => p.year).filter(Boolean))].sort((a, b) => b - a);
 
   const getProgress = (project) => {
     if (!project.tasks || project.tasks.length === 0) return 0;
@@ -186,27 +206,84 @@ export default function Projects() {
         actionLabel="פרויקט חדש"
       />
 
-      {/* Status Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={filterStatus === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterStatus("all")}
-          className={filterStatus === "all" ? "bg-blue-500" : ""}
-        >
-          הכל
-        </Button>
-        {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
-          <Button
-            key={key}
-            variant={filterStatus === key ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterStatus(key)}
-            className={filterStatus === key ? "bg-blue-500" : ""}
-          >
-            {label}
-          </Button>
-        ))}
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">סטטוס</label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterStatus === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus("all")}
+                className={filterStatus === "all" ? "bg-blue-500" : ""}
+              >
+                הכל
+              </Button>
+              {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
+                <Button
+                  key={key}
+                  variant={filterStatus === key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterStatus(key)}
+                  className={filterStatus === key ? "bg-blue-500" : ""}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">שנה</label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterYear === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterYear("all")}
+                className={filterYear === "all" ? "bg-blue-500" : ""}
+              >
+                כל השנים
+              </Button>
+              {availableYears.map(year => (
+                <Button
+                  key={year}
+                  variant={filterYear === year.toString() ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterYear(year.toString())}
+                  className={filterYear === year.toString() ? "bg-blue-500" : ""}
+                >
+                  {year}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">טווח</label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterRange === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterRange("all")}
+                className={filterRange === "all" ? "bg-blue-500" : ""}
+              >
+                כל הטווחים
+              </Button>
+              {Object.entries(RANGE_CONFIG).map(([key, { label }]) => (
+                <Button
+                  key={key}
+                  variant={filterRange === key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterRange(key)}
+                  className={filterRange === key ? "bg-blue-500" : ""}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {projects.length === 0 && !isLoading ? (
@@ -221,6 +298,7 @@ export default function Projects() {
         <div className="grid gap-4">
           {filteredProjects.map(project => {
             const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning;
+            const rangeConfig = RANGE_CONFIG[project.range] || RANGE_CONFIG.medium;
             const progress = getProgress(project);
             const completedTasks = project.tasks?.filter(t => t.completed).length || 0;
             const totalTasks = project.tasks?.length || 0;
@@ -245,11 +323,21 @@ export default function Projects() {
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-lg text-slate-800">{project.title}</h3>
                         <Badge className={cn(statusConfig.color, "border-0")}>
                           {statusConfig.label}
                         </Badge>
+                        {project.range && (
+                          <Badge className={cn(rangeConfig.color, "border-0")}>
+                            {rangeConfig.label}
+                          </Badge>
+                        )}
+                        {project.year && (
+                          <Badge variant="outline" className="border-slate-200">
+                            {project.year}
+                          </Badge>
+                        )}
                       </div>
                       
                       {project.description && (
@@ -346,21 +434,50 @@ export default function Projects() {
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-slate-700">סטטוס</label>
-              <Select
-                value={formData.status}
-                onValueChange={(v) => setFormData({ ...formData, status: v })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">שנה</label>
+                <Input
+                  type="number"
+                  min="2000"
+                  max="2100"
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">סטטוס</label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => setFormData({ ...formData, status: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">טווח</label>
+                <Select
+                  value={formData.range}
+                  onValueChange={(v) => setFormData({ ...formData, range: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(RANGE_CONFIG).map(([key, { label }]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

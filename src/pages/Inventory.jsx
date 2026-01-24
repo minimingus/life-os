@@ -38,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, isBefore } from "date-fns";
 import { CheckCircle2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const CATEGORIES = {
   fruits: { label: "פירות", color: "bg-red-100 text-red-600" },

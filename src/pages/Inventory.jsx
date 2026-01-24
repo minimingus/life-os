@@ -30,7 +30,8 @@ import {
   Plus,
   Minus,
   ShoppingCart,
-  X
+  X,
+  Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, isBefore } from "date-fns";
@@ -66,6 +67,7 @@ export default function Inventory() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [filterLocation, setFilterLocation] = useState("all");
+  const [showStaplesOnly, setShowStaplesOnly] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     category: "other",
@@ -74,7 +76,8 @@ export default function Inventory() {
     expiry_date: "",
     location: "fridge",
     min_quantity: 0,
-    status: "ok"
+    status: "ok",
+    is_staple: false
   });
 
   const queryClient = useQueryClient();
@@ -123,7 +126,8 @@ export default function Inventory() {
       expiry_date: "",
       location: "fridge",
       min_quantity: 0,
-      status: "ok"
+      status: "ok",
+      is_staple: false
     });
   };
 
@@ -195,14 +199,19 @@ export default function Inventory() {
       expiry_date: item.expiry_date || "",
       location: item.location || "fridge",
       min_quantity: item.min_quantity || 0,
-      status: item.status || "ok"
+      status: item.status || "ok",
+      is_staple: item.is_staple || false
     });
     setShowDialog(true);
   };
 
-  const filteredItems = filterLocation === "all"
+  let filteredItems = filterLocation === "all"
     ? items
     : items.filter(i => i.location === filterLocation);
+  
+  if (showStaplesOnly) {
+    filteredItems = filteredItems.filter(i => i.is_staple);
+  }
 
   const getExpiryInfo = (date) => {
     if (!date) return null;
@@ -217,6 +226,8 @@ export default function Inventory() {
 
   const expiredCount = items.filter(i => i.status === "expired").length;
   const lowCount = items.filter(i => i.status === "low").length;
+  const stapleCount = items.filter(i => i.is_staple).length;
+  const lowStapleCount = items.filter(i => i.is_staple && (i.status === "low" || i.quantity === 0)).length;
 
   return (
     <div className="space-y-6">
@@ -228,8 +239,14 @@ export default function Inventory() {
       />
 
       {/* Alert Badges */}
-      {(expiredCount > 0 || lowCount > 0) && (
+      {(expiredCount > 0 || lowCount > 0 || lowStapleCount > 0) && (
         <div className="flex flex-wrap gap-3">
+          {lowStapleCount > 0 && (
+            <Badge className="bg-orange-500">
+              <Star className="w-3 h-3 ml-1" />
+              {lowStapleCount} פריטים בסיסיים נגמרים
+            </Badge>
+          )}
           {expiredCount > 0 && (
             <Badge variant="destructive" className="bg-rose-500">
               <AlertTriangle className="w-3 h-3 ml-1" />
@@ -267,6 +284,16 @@ export default function Inventory() {
             {label}
           </Button>
         ))}
+        <div className="h-8 w-px bg-slate-200 mx-1" />
+        <Button
+          variant={showStaplesOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowStaplesOnly(!showStaplesOnly)}
+          className={showStaplesOnly ? "bg-amber-500 hover:bg-amber-600" : ""}
+        >
+          <Star className="w-4 h-4 ml-1" />
+          פריטים בסיסיים ({stapleCount})
+        </Button>
       </div>
 
       {items.length === 0 && !isLoading ? (
@@ -304,6 +331,9 @@ export default function Inventory() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-slate-800">{item.name}</p>
+                      {item.is_staple && (
+                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      )}
                       {item.status === "expired" && (
                         <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
                       )}
@@ -485,9 +515,21 @@ export default function Inventory() {
                   className="mt-1"
                 />
               </div>
-            </div>
+              </div>
 
-            <div className="flex gap-3 pt-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="is_staple"
+                  checked={formData.is_staple}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_staple: checked })}
+                />
+                <label htmlFor="is_staple" className="text-sm font-medium text-slate-700 flex items-center gap-1">
+                  <Star className="w-4 h-4 text-amber-500" />
+                  פריט בסיסי (חייב להיות תמיד במלאי)
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
               <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600">
                 {editItem ? "עדכן" : "הוסף"}
               </Button>

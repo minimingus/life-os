@@ -165,9 +165,25 @@ export default function Inventory() {
     return "ok";
   };
 
-  const updateQuantity = (item, delta) => {
+  const updateQuantity = async (item, delta) => {
     const newQuantity = Math.max(0, (item.quantity || 0) + delta);
-    const status = getItemStatus({ ...item, quantity: newQuantity });
+    let status = getItemStatus({ ...item, quantity: newQuantity });
+    
+    // נגמר לחלוטין
+    if (newQuantity === 0) {
+      status = "out_of_stock";
+      
+      // הוסף אוטומטית לרשימת קניות
+      await base44.entities.ShoppingItem.create({
+        name: item.name,
+        category: item.category,
+        quantity: 1,
+        unit: item.unit,
+        priority: item.is_staple ? 'high' : 'medium',
+        notes: 'נוסף אוטומטית - נגמר במלאי'
+      });
+    }
+    
     updateMutation.mutate({ 
       id: item.id, 
       data: { ...item, quantity: newQuantity, status } 
@@ -183,21 +199,21 @@ export default function Inventory() {
     });
   };
 
-  const markAsFinished = (item) => {
-    // Set quantity to 0
-    const status = "low";
+  const markAsFinished = async (item) => {
+    // Set quantity to 0 and mark as out of stock
     updateMutation.mutate({ 
       id: item.id, 
-      data: { ...item, quantity: 0, status } 
+      data: { ...item, quantity: 0, status: "out_of_stock" } 
     });
     
     // Add to shopping list
-    createShoppingMutation.mutate({
+    await base44.entities.ShoppingItem.create({
       name: item.name,
       category: item.category,
       quantity: item.quantity || 1,
       unit: item.unit,
-      priority: "high"
+      priority: item.is_staple ? "high" : "medium",
+      notes: 'נוסף אוטומטית - נגמר במלאי'
     });
   };
 
@@ -350,8 +366,9 @@ export default function Inventory() {
 
   const expiredCount = items.filter(i => i.status === "expired").length;
   const lowCount = items.filter(i => i.status === "low").length;
+  const outOfStockCount = items.filter(i => i.status === "out_of_stock").length;
   const stapleCount = items.filter(i => i.is_staple).length;
-  const lowStapleCount = items.filter(i => i.is_staple && (i.status === "low" || i.quantity === 0)).length;
+  const lowStapleCount = items.filter(i => i.is_staple && (i.status === "low" || i.status === "out_of_stock")).length;
 
   return (
     <div className="space-y-6">
@@ -370,6 +387,28 @@ export default function Inventory() {
           העלה חשבונית
         </Button>
       </PageHeader>
+
+      {/* Out of Stock Alert - CRITICAL */}
+      {outOfStockCount > 0 && (
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-2xl shadow-2xl shadow-red-500/30 animate-pulse">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold mb-2">🚨 פריטים נגמרו במלאי!</h3>
+              <p className="text-red-100 mb-3">{outOfStockCount} פריטים נגמרו לחלוטין ונוספו אוטומטית לרשימת הקניות</p>
+              <div className="flex flex-wrap gap-2">
+                {items.filter(i => i.status === "out_of_stock").map(item => (
+                  <Badge key={item.id} className="bg-white/20 text-white border-white/30">
+                    {item.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Alert Badges */}
       {(expiredCount > 0 || lowCount > 0 || lowStapleCount > 0) && (
@@ -449,10 +488,11 @@ export default function Inventory() {
               <div 
                 key={item.id}
                 className={cn(
-                  "bg-white rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer",
+                  "rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer",
+                  item.status === "out_of_stock" ? "bg-gradient-to-br from-red-50 to-red-100 border-red-400 shadow-red-200 animate-pulse" :
                   item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
                   item.status === "low" ? "border-amber-200 bg-amber-50/50" :
-                  "border-slate-100"
+                  "bg-white border-slate-100"
                 )}
                 onClick={() => openEdit(item)}
               >

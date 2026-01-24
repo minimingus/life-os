@@ -42,7 +42,8 @@ import {
   MessageSquare,
   Plus,
   Clock,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isBefore, addDays } from "date-fns";
@@ -81,7 +82,9 @@ export default function Bills() {
     due_date: "",
     is_paid: false,
     notes: "",
-    file_url: ""
+    file_url: "",
+    family_member_id: "",
+    family_member_name: ""
   });
 
   const [inquiryFormData, setInquiryFormData] = useState({
@@ -94,7 +97,9 @@ export default function Bills() {
     contact_phone: "",
     opened_date: format(new Date(), "yyyy-MM-dd"),
     notes: "",
-    file_url: ""
+    file_url: "",
+    family_member_id: "",
+    family_member_name: ""
   });
 
   const queryClient = useQueryClient();
@@ -108,6 +113,13 @@ export default function Bills() {
     queryKey: ["inquiries"],
     queryFn: () => base44.entities.BillInquiry.list("-created_date")
   });
+
+  const { data: familyMembers = [] } = useQuery({
+    queryKey: ["family"],
+    queryFn: () => base44.entities.FamilyMember.list()
+  });
+
+  const parents = familyMembers.filter(m => m.role === "parent");
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Bill.create(data),
@@ -161,7 +173,9 @@ export default function Bills() {
       due_date: "",
       is_paid: false,
       notes: "",
-      file_url: ""
+      file_url: "",
+      family_member_id: "",
+      family_member_name: ""
     });
   };
 
@@ -178,7 +192,9 @@ export default function Bills() {
       contact_phone: "",
       opened_date: format(new Date(), "yyyy-MM-dd"),
       notes: "",
-      file_url: ""
+      file_url: "",
+      family_member_id: "",
+      family_member_name: ""
     });
   };
 
@@ -206,7 +222,9 @@ export default function Bills() {
       due_date: item.due_date || "",
       is_paid: item.is_paid || false,
       notes: item.notes || "",
-      file_url: item.file_url || ""
+      file_url: item.file_url || "",
+      family_member_id: item.family_member_id || "",
+      family_member_name: item.family_member_name || ""
     });
     setShowDialog(true);
   };
@@ -267,7 +285,9 @@ export default function Bills() {
       contact_phone: inquiry.contact_phone || "",
       opened_date: inquiry.opened_date || format(new Date(), "yyyy-MM-dd"),
       notes: inquiry.notes || "",
-      file_url: inquiry.file_url || ""
+      file_url: inquiry.file_url || "",
+      family_member_id: inquiry.family_member_id || "",
+      family_member_name: inquiry.family_member_name || ""
     });
     setShowInquiryDialog(true);
   };
@@ -471,6 +491,12 @@ export default function Bills() {
                           {format(parseISO(bill.due_date), "dd/MM/yyyy")}
                         </span>
                       )}
+                      {bill.family_member_name && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {bill.family_member_name}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -572,6 +598,12 @@ export default function Bills() {
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               {format(parseISO(inquiry.opened_date), "dd/MM/yyyy")}
+                            </span>
+                          )}
+                          {inquiry.family_member_name && (
+                            <span className="flex items-center gap-1">
+                              <User className="w-3 h-3" />
+                              {inquiry.family_member_name}
                             </span>
                           )}
                         </div>
@@ -697,6 +729,31 @@ export default function Bills() {
                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                 className="mt-1"
               />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">הורה אחראי</label>
+              <Select
+                value={formData.family_member_id}
+                onValueChange={(v) => {
+                  const parent = parents.find(p => p.id === v);
+                  setFormData({ 
+                    ...formData, 
+                    family_member_id: v,
+                    family_member_name: parent?.name || ""
+                  });
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="בחר הורה (אופציונלי)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>ללא שיוך</SelectItem>
+                  {parents.map(parent => (
+                    <SelectItem key={parent.id} value={parent.id}>{parent.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-center gap-2">
@@ -863,6 +920,31 @@ export default function Bills() {
                   className="mt-1"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">הורה אחראי</label>
+              <Select
+                value={inquiryFormData.family_member_id}
+                onValueChange={(v) => {
+                  const parent = parents.find(p => p.id === v);
+                  setInquiryFormData({ 
+                    ...inquiryFormData, 
+                    family_member_id: v,
+                    family_member_name: parent?.name || ""
+                  });
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="בחר הורה (אופציונלי)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>ללא שיוך</SelectItem>
+                  {parents.map(parent => (
+                    <SelectItem key={parent.id} value={parent.id}>{parent.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

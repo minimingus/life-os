@@ -76,6 +76,7 @@ export default function Inventory() {
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptResult, setReceiptResult] = useState(null);
+  const [dismissedOutOfStockAlert, setDismissedOutOfStockAlert] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     category: "other",
@@ -389,7 +390,7 @@ export default function Inventory() {
       </PageHeader>
 
       {/* Out of Stock Alert - CRITICAL */}
-      {outOfStockCount > 0 && (
+      {outOfStockCount > 0 && !dismissedOutOfStockAlert && (
         <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-2xl shadow-2xl shadow-red-500/30 animate-pulse">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -406,6 +407,14 @@ export default function Inventory() {
                 ))}
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDismissedOutOfStockAlert(true)}
+              className="text-white hover:bg-white/20 flex-shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       )}

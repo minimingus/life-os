@@ -164,9 +164,9 @@ export default function Home() {
           onClick={() => window.location.href = createPageUrl("Inventory")}
         />
         <StatCard
-          title="תיקונים פתוחים"
+          title="אחזקת בית"
           value={activeRepairsCount}
-          subtitle="ממתינים לטיפול"
+          subtitle="משימות פתוחות"
           icon={Wrench}
           iconBg="bg-gradient-to-br from-orange-500 to-orange-600 shadow-orange-500/30"
           onClick={() => window.location.href = createPageUrl("Repairs")}
@@ -246,8 +246,8 @@ export default function Home() {
             color="blue"
           />
           <QuickAction
-            title="דווח על תקלה"
-            description={`${activeRepairsCount} תיקונים פתוחים`}
+            title="משימת אחזקה חדשה"
+            description={`${activeRepairsCount} משימות פתוחות`}
             icon={Wrench}
             href={createPageUrl("Repairs")}
             color="orange"

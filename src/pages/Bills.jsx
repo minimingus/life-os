@@ -344,6 +344,42 @@ export default function Bills() {
     setShowInquiryDialog(true);
   };
 
+  const handleReportSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      ...reportFormData,
+      total_amount: reportFormData.total_amount ? parseFloat(reportFormData.total_amount) : 0
+    };
+    
+    if (editReport) {
+      updateReportMutation.mutate({ id: editReport.id, data });
+    } else {
+      createReportMutation.mutate(data);
+    }
+  };
+
+  const openEditReport = (report) => {
+    setEditReport(report);
+    setReportFormData({
+      title: report.title || "",
+      description: report.description || "",
+      period: report.period || "",
+      total_amount: report.total_amount || "",
+      notes: report.notes || "",
+      file_url: report.file_url || "",
+      created_date: report.created_date || format(new Date(), "yyyy-MM-dd")
+    });
+    setShowReportDialog(true);
+  };
+
+  const handleReportFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setReportFormData({ ...reportFormData, file_url });
+    }
+  };
+
   let filteredBills = bills;
   if (filterType !== "all") {
     filteredBills = filteredBills.filter(b => b.type === filterType);

@@ -386,14 +386,23 @@ export default function Family() {
                     </h3>
                     <div className="space-y-2">
                       {memberProjects.map(project => (
-                        <div key={project.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                          <div className="flex items-start justify-between">
-                            <div>
+                        <div key={project.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
                               <p className="font-medium text-slate-800">{project.title}</p>
                               {project.description && (
                                 <p className="text-sm text-slate-600 mt-1">{project.description}</p>
                               )}
                             </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-100 flex-shrink-0"
+                              onClick={() => window.open(`/projects?member=${selectedMember.id}`, '_blank')}
+                            >
+                              <ListTodo className="w-3 h-3 ml-1" />
+                              משימות
+                            </Button>
                           </div>
                         </div>
                       ))}

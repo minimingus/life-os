@@ -19,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { 
   Package, 
   Trash2, 
@@ -75,6 +81,7 @@ export default function Inventory() {
   const [showStaplesOnly, setShowStaplesOnly] = useState(false);
   const [activeFilter, setActiveFilter] = useState(null);
   const [showMissingOnly, setShowMissingOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState("available");
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptResult, setReceiptResult] = useState(null);
@@ -383,6 +390,17 @@ export default function Inventory() {
     filteredItems = filteredItems.filter(i => i.status === "low");
   }
 
+  // Split items by availability
+  const availableItems = filteredItems.filter(i => 
+    i.status !== "out_of_stock" && 
+    !(i.status === "low" && (i.min_quantity || 0) > 1)
+  );
+  const missingItems = filteredItems.filter(i => 
+    i.status === "out_of_stock" || 
+    (i.status === "low" && (i.min_quantity || 0) > 1)
+  );
+  const displayItems = activeTab === "available" ? availableItems : missingItems;
+
   const getExpiryInfo = (date) => {
     if (!date) return null;
     const expiry = parseISO(date);
@@ -547,8 +565,149 @@ export default function Inventory() {
           actionLabel="הוסף פריט"
         />
       ) : (
-        <div className="grid gap-4">
-          {filteredItems.map(item => {
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="available">
+              מלאי זמין ({availableItems.length})
+            </TabsTrigger>
+            <TabsTrigger value="missing">
+              חוסרים ({missingItems.length})
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="available" className="mt-6">
+            {availableItems.length === 0 ? (
+              <EmptyState
+                icon={Package}
+                title="אין פריטים זמינים"
+                description="כל הפריטים נגמרו או במלאי נמוך"
+              />
+            ) : (
+              <div className="grid gap-4">
+                {availableItems.map(item => {
+                  const cat = CATEGORIES[item.category] || CATEGORIES.other;
+                  const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
+                  const LocationIcon = loc.icon;
+                  const expiryInfo = getExpiryInfo(item.expiry_date);
+                  
+                  return (
+                    <div 
+                      key={item.id}
+                      className={cn(
+                        "rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer",
+                        item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
+                        item.status === "low" ? "border-amber-200 bg-amber-50/50" :
+                        "bg-white border-slate-100"
+                      )}
+                      onClick={() => openEdit(item)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", cat.color)}>
+                          <Package className="w-6 h-6" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-slate-800">{item.name}</p>
+                            {item.is_staple && (
+                              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm">
+                                <Star className="w-3 h-3 ml-1 fill-white" />
+                                פריט חובה
+                              </Badge>
+                            )}
+                            {item.status === "expired" && (
+                              <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
+                            )}
+                            {item.status === "low" && (
+                              <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
+                            )}
+                            {item.tags?.map((tag, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                <Tag className="w-3 h-3 ml-1" />
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <LocationIcon className="w-3 h-3" />
+                              {loc.label}
+                            </span>
+                            {expiryInfo && (
+                              <span className={cn("px-2 py-0.5 rounded-full text-xs", expiryInfo.color)}>
+                                תפוגה: {expiryInfo.text}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => updateQuantity(item, -1)}
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                          <span className="w-16 text-center font-semibold">
+                            {item.quantity} {UNITS[item.unit]}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => updateQuantity(item, 1)}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markAsFinished(item)}
+                            className="h-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+                            title="נגמר - הוסף לקניות"
+                          >
+                            <X className="w-4 h-4 ml-1" />
+                            נגמר
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => addToShoppingList(item)}
+                            className="text-slate-400 hover:text-blue-500"
+                            title="הוסף לרשימת קניות"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(item.id)}
+                            className="text-slate-400 hover:text-rose-500"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="missing" className="mt-6">
+            {missingItems.length === 0 ? (
+              <EmptyState
+                icon={Package}
+                title="אין חוסרים"
+                description="כל הפריטים זמינים"
+              />
+            ) : (
+              <div className="grid gap-4">
+                {missingItems.map(item => {
             const cat = CATEGORIES[item.category] || CATEGORIES.other;
             const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
             const LocationIcon = loc.icon;
@@ -666,9 +825,12 @@ export default function Inventory() {
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+                    );
+                  })}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Add/Edit Dialog */}

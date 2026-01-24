@@ -66,7 +66,16 @@ export default function Home() {
   const todayStr = format(today, "yyyy-MM-dd");
   const todayEvents = events.filter(e => e.date === todayStr);
 
+  const lowStapleItems = inventory.filter(i => i.is_staple && (i.status === "low" || i.quantity === 0));
+
   const urgentItems = [
+    ...lowStapleItems.map(i => ({
+      type: "staple",
+      title: `${i.name} - פריט בסיסי שנגמר`,
+      icon: Package,
+      color: "text-orange-500",
+      href: createPageUrl("Inventory")
+    })),
     ...repairs.filter(r => r.priority === "urgent" && r.status !== "completed").map(r => ({
       type: "repair",
       title: r.title,

@@ -791,23 +791,23 @@ export default function Bills() {
                 <h3 className="font-semibold text-slate-800 mb-4">פירוט לפי סוג</h3>
               <div className="space-y-3">
                 {Object.entries(BILL_TYPES).map(([key, { label, icon: Icon, color }]) => {
-                  const typeBills = bills.filter(b => b.type === key);
-                  const total = typeBills.reduce((sum, b) => sum + (b.amount || 0), 0);
-                  if (total === 0) return null;
-                  
-                  return (
-                    <div key={key} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", color)}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <span className="font-medium text-slate-700">{label}</span>
-                      </div>
-                      <span className="font-bold text-slate-800">₪{total.toLocaleString()}</span>
-                    </div>
-                  );
-                })}
-              </div>
+                   const typeBills = bills.filter(b => b.type === key);
+                   const total = typeBills.reduce((sum, b) => sum + (b.amount || 0), 0);
+                   if (total === 0) return null;
+
+                   return (
+                     <div key={key} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50">
+                       <div className="flex items-center gap-3">
+                         <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", color)}>
+                           <Icon className="w-5 h-5" />
+                         </div>
+                         <span className="font-medium text-slate-700">{label}</span>
+                       </div>
+                       <span className="font-bold text-slate-800">₪{total.toLocaleString()}</span>
+                     </div>
+                   );
+                 })}
+               </div>
             </div>
           </div>
         </TabsContent>

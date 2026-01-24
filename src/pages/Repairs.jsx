@@ -156,17 +156,17 @@ export default function Repairs() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="תיקונים"
-        subtitle={`${activeRepairs.length} תיקונים פתוחים`}
+        title="אחזקת בית"
+        subtitle={`${activeRepairs.length} משימות אחזקה פתוחות`}
         action={() => setShowDialog(true)}
-        actionLabel="דווח על תקלה"
+        actionLabel="דווח על משימה"
       />
 
       {/* Alert */}
       {urgentCount > 0 && (
         <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl">
           <AlertTriangle className="w-5 h-5 text-rose-500" />
-          <span className="text-rose-700 font-medium">{urgentCount} תיקונים דחופים ממתינים לטיפול</span>
+          <span className="text-rose-700 font-medium">{urgentCount} משימות דחופות ממתינות לטיפול</span>
         </div>
       )}
 
@@ -197,10 +197,10 @@ export default function Repairs() {
       {repairs.length === 0 && !isLoading ? (
         <EmptyState
           icon={Wrench}
-          title="אין תיקונים"
-          description="הכל עובד כמו שצריך! דווח על תקלה כשיש צורך"
+          title="אין משימות אחזקה"
+          description="הכל עובד כמו שצריך! דווח על משימה כשיש צורך"
           action={() => setShowDialog(true)}
-          actionLabel="דווח על תקלה"
+          actionLabel="דווח על משימה"
         />
       ) : (
         <div className="grid gap-4">
@@ -291,7 +291,7 @@ export default function Repairs() {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>{editItem ? "עריכת תיקון" : "דיווח על תקלה"}</DialogTitle>
+            <DialogTitle>{editItem ? "עריכת משימת אחזקה" : "דיווח על משימת אחזקה"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

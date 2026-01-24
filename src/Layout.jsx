@@ -25,7 +25,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "דף הבית", href: createPageUrl("Home"), icon: Home, page: "Home" },
     { name: "רשימת קניות", href: createPageUrl("Shopping"), icon: ShoppingCart, page: "Shopping" },
     { name: "מלאי בבית", href: createPageUrl("Inventory"), icon: Package, page: "Inventory" },
-    { name: "תיקונים", href: createPageUrl("Repairs"), icon: Wrench, page: "Repairs" },
+    { name: "אחזקת בית", href: createPageUrl("Repairs"), icon: Wrench, page: "Repairs" },
     { name: "פרויקטים", href: createPageUrl("Projects"), icon: FolderKanban, page: "Projects" },
     { name: "חשבונות", href: createPageUrl("Bills"), icon: Receipt, page: "Bills" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },

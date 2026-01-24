@@ -31,7 +31,9 @@ import {
   Calendar,
   Wallet,
   Upload,
-  Image
+  Image,
+  Filter,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -56,6 +58,7 @@ const TYPE_CONFIG = {
 
 export default function Projects() {
   const [showDialog, setShowDialog] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterYear, setFilterYear] = useState("all");
@@ -220,6 +223,8 @@ export default function Projects() {
     return Math.round((project.tasks.filter(t => t.completed).length / project.tasks.length) * 100);
   };
 
+  const activeFiltersCount = [filterStatus, filterYear, filterRange, filterType, filterMember].filter(f => f !== "all").length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -229,135 +234,125 @@ export default function Projects() {
         actionLabel="פרויקט חדש"
       />
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-2 block">סטטוס</label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={filterStatus === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterStatus("all")}
-                className={filterStatus === "all" ? "bg-blue-500" : ""}
-              >
-                הכל
-              </Button>
-              {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
-                <Button
-                  key={key}
-                  variant={filterStatus === key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterStatus(key)}
-                  className={filterStatus === key ? "bg-blue-500" : ""}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </div>
+      {/* Filters Toggle */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="gap-2"
+        >
+          <Filter className="w-4 h-4" />
+          פילטרים
+          {activeFiltersCount > 0 && (
+            <Badge className="bg-blue-500 text-white h-5 min-w-5 px-1.5 text-xs">
+              {activeFiltersCount}
+            </Badge>
+          )}
+        </Button>
+        
+        {activeFiltersCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setFilterStatus("all");
+              setFilterYear("all");
+              setFilterRange("all");
+              setFilterType("all");
+              setFilterMember("all");
+            }}
+            className="gap-1 text-slate-500 hover:text-slate-700"
+          >
+            <X className="w-3 h-3" />
+            נקה הכל
+          </Button>
+        )}
+      </div>
 
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-2 block">שנה</label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={filterYear === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterYear("all")}
-                className={filterYear === "all" ? "bg-blue-500" : ""}
-              >
-                כל השנים
-              </Button>
-              {availableYears.map(year => (
-                <Button
-                  key={year}
-                  variant={filterYear === year.toString() ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterYear(year.toString())}
-                  className={filterYear === year.toString() ? "bg-blue-500" : ""}
-                >
-                  {year}
-                </Button>
-              ))}
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-2 block">סטטוס</label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל</SelectItem>
+                  {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-2 block">טווח</label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={filterRange === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterRange("all")}
-                className={filterRange === "all" ? "bg-blue-500" : ""}
-              >
-                כל הטווחים
-              </Button>
-              {Object.entries(RANGE_CONFIG).map(([key, { label }]) => (
-                <Button
-                  key={key}
-                  variant={filterRange === key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterRange(key)}
-                  className={filterRange === key ? "bg-blue-500" : ""}
-                >
-                  {label}
-                </Button>
-              ))}
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-2 block">שנה</label>
+              <Select value={filterYear} onValueChange={setFilterYear}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל השנים</SelectItem>
+                  {availableYears.map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-2 block">סוג</label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={filterType === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterType("all")}
-                className={filterType === "all" ? "bg-blue-500" : ""}
-              >
-                הכל
-              </Button>
-              {Object.entries(TYPE_CONFIG).map(([key, { label }]) => (
-                <Button
-                  key={key}
-                  variant={filterType === key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType(key)}
-                  className={filterType === key ? "bg-blue-500" : ""}
-                >
-                  {label}
-                </Button>
-              ))}
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-2 block">טווח</label>
+              <Select value={filterRange} onValueChange={setFilterRange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל הטווחים</SelectItem>
+                  {Object.entries(RANGE_CONFIG).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-2 block">בן משפחה</label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={filterMember === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterMember("all")}
-                className={filterMember === "all" ? "bg-blue-500" : ""}
-              >
-                כל בני המשפחה
-              </Button>
-              {familyMembers.map(member => (
-                <Button
-                  key={member.id}
-                  variant={filterMember === member.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterMember(member.id)}
-                  className={filterMember === member.id ? "bg-blue-500" : ""}
-                >
-                  {member.name}
-                </Button>
-              ))}
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-2 block">סוג</label>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל</SelectItem>
+                  {Object.entries(TYPE_CONFIG).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {familyMembers.length > 0 && (
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-2 block">בן משפחה</label>
+                <Select value={filterMember} onValueChange={setFilterMember}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">כל בני המשפחה</SelectItem>
+                    {familyMembers.map(member => (
+                      <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
       {projects.length === 0 && !isLoading ? (
         <EmptyState

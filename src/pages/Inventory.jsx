@@ -74,6 +74,7 @@ export default function Inventory() {
   const [filterLocation, setFilterLocation] = useState("all");
   const [showStaplesOnly, setShowStaplesOnly] = useState(false);
   const [activeFilter, setActiveFilter] = useState(null);
+  const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptResult, setReceiptResult] = useState(null);
@@ -355,6 +356,10 @@ export default function Inventory() {
     filteredItems = filteredItems.filter(i => i.is_staple);
   }
 
+  if (showMissingOnly) {
+    filteredItems = filteredItems.filter(i => i.status === "low" || i.status === "out_of_stock");
+  }
+
   // Apply active filter from badges
   if (activeFilter === "lowStaples") {
     filteredItems = filteredItems.filter(i => i.is_staple && (i.status === "low" || i.status === "out_of_stock"));
@@ -503,6 +508,15 @@ export default function Inventory() {
         >
           <Star className="w-4 h-4 ml-1" />
           פריטים בסיסיים ({stapleCount})
+        </Button>
+        <Button
+          variant={showMissingOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowMissingOnly(!showMissingOnly)}
+          className={showMissingOnly ? "bg-red-500 hover:bg-red-600" : "border-red-200 text-red-600 hover:bg-red-50"}
+        >
+          <AlertTriangle className="w-4 h-4 ml-1" />
+          חוסרים ({lowCount + outOfStockCount})
         </Button>
       </div>
 

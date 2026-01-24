@@ -287,15 +287,39 @@ export default function SchoolSchedule() {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="schedule" className="gap-2">
-              <BookOpen className="w-4 h-4" />
-              מערכת שעות
-            </TabsTrigger>
-            <TabsTrigger value="activities" className="gap-2">
-              <Dumbbell className="w-4 h-4" />
-              חוגים
-            </TabsTrigger>
-          </TabsList>
+             <TabsTrigger value="schedule" className="gap-2">
+               <BookOpen className="w-4 h-4" />
+               מערכת שעות
+             </TabsTrigger>
+             <TabsTrigger value="activities" className="gap-2">
+               <Dumbbell className="w-4 h-4" />
+               חוגים
+             </TabsTrigger>
+           </TabsList>
+
+           {activeTab === "schedule" && (
+             <div className="mb-6 flex flex-wrap gap-2">
+               <Button
+                 variant={selectedDay === null ? "default" : "outline"}
+                 size="sm"
+                 onClick={() => setSelectedDay(null)}
+                 className={selectedDay === null ? "bg-blue-500" : ""}
+               >
+                 כל הימים
+               </Button>
+               {DAYS.map((day, idx) => (
+                 <Button
+                   key={idx}
+                   variant={selectedDay === idx ? "default" : "outline"}
+                   size="sm"
+                   onClick={() => setSelectedDay(idx)}
+                   className={selectedDay === idx ? "bg-blue-500" : ""}
+                 >
+                   {day}
+                 </Button>
+               ))}
+             </div>
+           )}
 
           <TabsContent value="schedule" className="mt-0">
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">

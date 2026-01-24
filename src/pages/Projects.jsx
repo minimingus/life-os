@@ -33,7 +33,10 @@ import {
   Upload,
   Image,
   Filter,
-  X
+  X,
+  LayoutGrid,
+  List,
+  ListOrdered
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -59,6 +62,7 @@ const TYPE_CONFIG = {
 export default function Projects() {
   const [showDialog, setShowDialog] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState("grid");
   const [editItem, setEditItem] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterYear, setFilterYear] = useState("all");
@@ -234,40 +238,69 @@ export default function Projects() {
         actionLabel="פרויקט חדש"
       />
 
-      {/* Filters Toggle */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className="gap-2"
-        >
-          <Filter className="w-4 h-4" />
-          פילטרים
-          {activeFiltersCount > 0 && (
-            <Badge className="bg-blue-500 text-white h-5 min-w-5 px-1.5 text-xs">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </Button>
-        
-        {activeFiltersCount > 0 && (
+      {/* Filters & View Toggle */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={() => {
-              setFilterStatus("all");
-              setFilterYear("all");
-              setFilterRange("all");
-              setFilterType("all");
-              setFilterMember("all");
-            }}
-            className="gap-1 text-slate-500 hover:text-slate-700"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-2"
           >
-            <X className="w-3 h-3" />
-            נקה הכל
+            <Filter className="w-4 h-4" />
+            פילטרים
+            {activeFiltersCount > 0 && (
+              <Badge className="bg-blue-500 text-white h-5 min-w-5 px-1.5 text-xs">
+                {activeFiltersCount}
+              </Badge>
+            )}
           </Button>
-        )}
+          
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterStatus("all");
+                setFilterYear("all");
+                setFilterRange("all");
+                setFilterType("all");
+                setFilterMember("all");
+              }}
+              className="gap-1 text-slate-500 hover:text-slate-700"
+            >
+              <X className="w-3 h-3" />
+              נקה הכל
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-1">
+          <Button
+            variant={viewMode === "grid" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+            className={cn("h-8 px-3", viewMode === "grid" && "bg-blue-500")}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
+          <Button
+            variant={viewMode === "compact" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("compact")}
+            className={cn("h-8 px-3", viewMode === "compact" && "bg-blue-500")}
+          >
+            <List className="w-4 h-4" />
+          </Button>
+          <Button
+            variant={viewMode === "detailed" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("detailed")}
+            className={cn("h-8 px-3", viewMode === "detailed" && "bg-blue-500")}
+          >
+            <ListOrdered className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Filters Panel */}
@@ -363,65 +396,70 @@ export default function Projects() {
           actionLabel="פרויקט חדש"
         />
       ) : (
-        <div className="grid gap-4">
-          {filteredProjects.map(project => {
-            const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning;
-            const rangeConfig = RANGE_CONFIG[project.range] || RANGE_CONFIG.medium;
-            const typeConfig = TYPE_CONFIG[project.type] || TYPE_CONFIG.family;
-            const progress = getProgress(project);
-            const completedTasks = project.tasks?.filter(t => t.completed).length || 0;
-            const totalTasks = project.tasks?.length || 0;
-            
-            return (
-              <div 
-                key={project.id}
-                className="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
-                onClick={() => openEdit(project)}
-              >
-                {/* Header Image */}
-                {project.photos && project.photos.length > 0 && (
-                  <div className="h-32 bg-slate-100 overflow-hidden">
-                    <img 
-                      src={project.photos[0]} 
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+        <>
+          {/* Grid View */}
+          {viewMode === "grid" && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map(project => {
+                const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning;
+                const rangeConfig = RANGE_CONFIG[project.range] || RANGE_CONFIG.medium;
+                const typeConfig = TYPE_CONFIG[project.type] || TYPE_CONFIG.family;
+                const progress = getProgress(project);
                 
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-lg text-slate-800">{project.title}</h3>
-                        <Badge className={cn(typeConfig.color, "border-0")}>
-                          {typeConfig.label}
-                        </Badge>
-                        {project.type === "personal" && project.family_member_name && (
-                          <Badge variant="outline" className="border-violet-200 text-violet-700">
-                            {project.family_member_name}
-                          </Badge>
-                        )}
-                        <Badge className={cn(statusConfig.color, "border-0")}>
-                          {statusConfig.label}
-                        </Badge>
-                        {project.range && (
-                          <Badge className={cn(rangeConfig.color, "border-0")}>
-                            {rangeConfig.label}
-                          </Badge>
-                        )}
-                        {project.year && (
-                          <Badge variant="outline" className="border-slate-200">
-                            {project.year}
-                          </Badge>
-                        )}
+                return (
+                  <div 
+                    key={project.id}
+                    className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
+                    onClick={() => openEdit(project)}
+                  >
+                    {project.photos?.[0] && (
+                      <div className="h-28 bg-slate-100 overflow-hidden">
+                        <img src={project.photos[0]} alt={project.title} className="w-full h-full object-cover" />
                       </div>
-                      
-                      {project.description && (
-                        <p className="text-sm text-slate-600 mt-2 line-clamp-2">{project.description}</p>
+                    )}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-slate-800 mb-2 line-clamp-1">{project.title}</h3>
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        <Badge className={cn(statusConfig.color, "border-0 text-xs")}>{statusConfig.label}</Badge>
+                        <Badge className={cn(typeConfig.color, "border-0 text-xs")}>{typeConfig.label}</Badge>
+                      </div>
+                      {progress > 0 && <Progress value={progress} className="h-1.5" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Compact List View */}
+          {viewMode === "compact" && (
+            <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+              {filteredProjects.map(project => {
+                const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning;
+                const typeConfig = TYPE_CONFIG[project.type] || TYPE_CONFIG.family;
+                const progress = getProgress(project);
+                
+                return (
+                  <div 
+                    key={project.id}
+                    className="p-4 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-4"
+                    onClick={() => openEdit(project)}
+                  >
+                    {project.photos?.[0] && (
+                      <img src={project.photos[0]} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-slate-800 truncate">{project.title}</h3>
+                        <Badge className={cn(statusConfig.color, "border-0 text-xs flex-shrink-0")}>{statusConfig.label}</Badge>
+                      </div>
+                      {progress > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Progress value={progress} className="h-1 flex-1" />
+                          <span className="text-xs text-slate-500 flex-shrink-0">{progress}%</span>
+                        </div>
                       )}
                     </div>
-                    
                     <Button
                       variant="ghost"
                       size="icon"
@@ -434,52 +472,114 @@ export default function Projects() {
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
-                  
-                  {/* Progress */}
-                  {totalTasks > 0 && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-slate-600">התקדמות</span>
-                        <span className="text-slate-500">{completedTasks} / {totalTasks} משימות</span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Detailed List View */}
+          {viewMode === "detailed" && (
+            <div className="space-y-4">
+              {filteredProjects.map(project => {
+                const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning;
+                const rangeConfig = RANGE_CONFIG[project.range] || RANGE_CONFIG.medium;
+                const typeConfig = TYPE_CONFIG[project.type] || TYPE_CONFIG.family;
+                const progress = getProgress(project);
+                const completedTasks = project.tasks?.filter(t => t.completed).length || 0;
+                const totalTasks = project.tasks?.length || 0;
+                
+                return (
+                  <div 
+                    key={project.id}
+                    className="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
+                    onClick={() => openEdit(project)}
+                  >
+                    {project.photos?.[0] && (
+                      <div className="h-32 bg-slate-100 overflow-hidden">
+                        <img src={project.photos[0]} alt={project.title} className="w-full h-full object-cover" />
                       </div>
-                      <Progress value={progress} className="h-2" />
-                    </div>
-                  )}
-                  
-                  {/* Info Row */}
-                  <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-slate-500">
-                    {project.budget && (
-                      <span className="flex items-center gap-1">
-                        <Wallet className="w-4 h-4" />
-                        תקציב: ₪{project.budget.toLocaleString()}
-                        {project.spent && (
-                          <span className={cn(
-                            "mr-1",
-                            project.spent > project.budget ? "text-rose-500" : "text-emerald-500"
-                          )}>
-                            (הוצא: ₪{project.spent.toLocaleString()})
+                    )}
+                    
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-lg text-slate-800">{project.title}</h3>
+                            <Badge className={cn(typeConfig.color, "border-0")}>{typeConfig.label}</Badge>
+                            {project.type === "personal" && project.family_member_name && (
+                              <Badge variant="outline" className="border-violet-200 text-violet-700">
+                                {project.family_member_name}
+                              </Badge>
+                            )}
+                            <Badge className={cn(statusConfig.color, "border-0")}>{statusConfig.label}</Badge>
+                            {project.range && (
+                              <Badge className={cn(rangeConfig.color, "border-0")}>{rangeConfig.label}</Badge>
+                            )}
+                            {project.year && (
+                              <Badge variant="outline" className="border-slate-200">{project.year}</Badge>
+                            )}
+                          </div>
+                          
+                          {project.description && (
+                            <p className="text-sm text-slate-600 mt-2 line-clamp-2">{project.description}</p>
+                          )}
+                        </div>
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteMutation.mutate(project.id);
+                          }}
+                          className="text-slate-400 hover:text-rose-500 flex-shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      {totalTasks > 0 && (
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-slate-600">התקדמות</span>
+                            <span className="text-slate-500">{completedTasks} / {totalTasks} משימות</span>
+                          </div>
+                          <Progress value={progress} className="h-2" />
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-slate-500">
+                        {project.budget && (
+                          <span className="flex items-center gap-1">
+                            <Wallet className="w-4 h-4" />
+                            תקציב: ₪{project.budget.toLocaleString()}
+                            {project.spent && (
+                              <span className={cn("mr-1", project.spent > project.budget ? "text-rose-500" : "text-emerald-500")}>
+                                (הוצא: ₪{project.spent.toLocaleString()})
+                              </span>
+                            )}
                           </span>
                         )}
-                      </span>
-                    )}
-                    {project.target_date && (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        יעד: {format(parseISO(project.target_date), "dd/MM/yyyy")}
-                      </span>
-                    )}
-                    {project.photos && project.photos.length > 1 && (
-                      <span className="flex items-center gap-1">
-                        <Image className="w-4 h-4" />
-                        {project.photos.length} תמונות
-                      </span>
-                    )}
+                        {project.target_date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            יעד: {format(parseISO(project.target_date), "dd/MM/yyyy")}
+                          </span>
+                        )}
+                        {project.photos?.length > 1 && (
+                          <span className="flex items-center gap-1">
+                            <Image className="w-4 h-4" />
+                            {project.photos.length} תמונות
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Add/Edit Dialog */}

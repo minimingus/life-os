@@ -29,7 +29,9 @@ import {
   Home,
   Dumbbell,
   ChefHat,
-  Calendar
+  Calendar,
+  List,
+  LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +51,7 @@ export default function FamilyRoutine() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
+  const [viewMode, setViewMode] = useState("grouped"); // "grouped" or "timeline"
   const [formData, setFormData] = useState({
     title: "",
     start_time: "",
@@ -170,24 +173,48 @@ export default function FamilyRoutine() {
         actionLabel="הוסף משימה"
       />
 
-      {/* Day selector */}
-      <div className="flex flex-wrap gap-2">
-        {DAYS.map((day, idx) => (
+      {/* Day selector and view mode toggle */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div className="flex flex-wrap gap-2">
+          {DAYS.map((day, idx) => (
+            <Button
+              key={idx}
+              variant={selectedDay === idx ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedDay(idx)}
+              className={selectedDay === idx ? "bg-blue-500" : ""}
+            >
+              {day}
+            </Button>
+          ))}
+        </div>
+        
+        <div className="flex gap-2">
           <Button
-            key={idx}
-            variant={selectedDay === idx ? "default" : "outline"}
+            variant={viewMode === "grouped" ? "default" : "outline"}
             size="sm"
-            onClick={() => setSelectedDay(idx)}
-            className={selectedDay === idx ? "bg-blue-500" : ""}
+            onClick={() => setViewMode("grouped")}
+            className={viewMode === "grouped" ? "bg-blue-500" : ""}
           >
-            {day}
+            <LayoutGrid className="w-4 h-4 ml-1" />
+            לפי בן משפחה
           </Button>
-        ))}
+          <Button
+            variant={viewMode === "timeline" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("timeline")}
+            className={viewMode === "timeline" ? "bg-blue-500" : ""}
+          >
+            <List className="w-4 h-4 ml-1" />
+            ציר זמן
+          </Button>
+        </div>
       </div>
 
-      {/* Timeline View */}
-      <div className="space-y-6">
-        {Object.entries(tasksByMember).map(([memberName, memberTasks]) => {
+      {/* Grouped View */}
+      {viewMode === "grouped" && (
+        <div className="space-y-6">
+          {Object.entries(tasksByMember).map(([memberName, memberTasks]) => {
           const member = familyMembers.find(m => m.name === memberName);
           
           return (
@@ -266,14 +293,119 @@ export default function FamilyRoutine() {
           );
         })}
 
-        {dailyTasks.length === 0 && (
-          <div className="text-center py-16 text-slate-500">
-            <Calendar className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg font-medium">אין משימות ליום {DAYS[selectedDay]}</p>
-            <p className="text-sm mt-1">הוסף משימות כדי לארגן את סדר היום</p>
-          </div>
-        )}
-      </div>
+          {dailyTasks.length === 0 && (
+            <div className="text-center py-16 text-slate-500">
+              <Calendar className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+              <p className="text-lg font-medium">אין משימות ליום {DAYS[selectedDay]}</p>
+              <p className="text-sm mt-1">הוסף משימות כדי לארגן את סדר היום</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Timeline View */}
+      {viewMode === "timeline" && (
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          {dailyTasks.length === 0 ? (
+            <div className="text-center py-16 text-slate-500">
+              <Calendar className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+              <p className="text-lg font-medium">אין משימות ליום {DAYS[selectedDay]}</p>
+              <p className="text-sm mt-1">הוסף משימות כדי לארגן את סדר היום</p>
+            </div>
+          ) : (
+            <div className="p-6">
+              {/* Timeline header */}
+              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-200">
+                <Clock className="w-5 h-5 text-blue-500" />
+                <h3 className="font-semibold text-slate-800">ציר זמן יומי - {DAYS[selectedDay]}</h3>
+              </div>
+
+              {/* Timeline items */}
+              <div className="space-y-0">
+                {dailyTasks.map((task, idx) => {
+                  const category = CATEGORIES[task.category] || CATEGORIES.other;
+                  const CategoryIcon = category.icon;
+                  const member = familyMembers.find(m => m.name === task.family_member_name);
+                  
+                  return (
+                    <div key={task.id} className="relative">
+                      {/* Timeline line */}
+                      {idx < dailyTasks.length - 1 && (
+                        <div className="absolute right-[29px] top-12 w-0.5 h-full bg-slate-200" />
+                      )}
+                      
+                      <div 
+                        className="flex gap-4 pb-6 cursor-pointer hover:bg-slate-50 p-3 rounded-xl transition-all"
+                        onClick={() => openEdit(task)}
+                      >
+                        {/* Time */}
+                        <div className="w-20 text-right flex-shrink-0 pt-1">
+                          <p className="font-semibold text-slate-800 text-sm">{task.start_time}</p>
+                          {task.end_time && (
+                            <p className="text-xs text-slate-400">{task.end_time}</p>
+                          )}
+                        </div>
+
+                        {/* Timeline dot */}
+                        <div className={cn(
+                          "w-3 h-3 rounded-full flex-shrink-0 mt-1.5 z-10 ring-4 ring-white",
+                          category.color.includes("amber") ? "bg-amber-500" :
+                          category.color.includes("blue") ? "bg-blue-500" :
+                          category.color.includes("pink") ? "bg-pink-500" :
+                          category.color.includes("green") ? "bg-green-500" :
+                          category.color.includes("purple") ? "bg-purple-500" :
+                          category.color.includes("orange") ? "bg-orange-500" :
+                          "bg-slate-500"
+                        )} />
+
+                        {/* Task content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-3">
+                            <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", category.color)}>
+                              <CategoryIcon className="w-5 h-5" />
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="font-semibold text-slate-800">{task.title}</h4>
+                                {task.family_member_name && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {member?.avatar ? (
+                                      <img src={member.avatar} alt="" className="w-3 h-3 rounded-full ml-1" />
+                                    ) : (
+                                      <User className="w-3 h-3 ml-1" />
+                                    )}
+                                    {task.family_member_name}
+                                  </Badge>
+                                )}
+                              </div>
+                              {task.description && (
+                                <p className="text-sm text-slate-600 mt-1">{task.description}</p>
+                              )}
+                            </div>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteMutation.mutate(task.id);
+                              }}
+                              className="text-slate-400 hover:text-rose-500 flex-shrink-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

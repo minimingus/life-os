@@ -28,7 +28,8 @@ import {
   CalendarDays,
   Filter,
   Repeat,
-  X
+  X,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isToday, isTomorrow, isThisWeek, addDays, addWeeks, addMonths, addYears, startOfWeek } from "date-fns";
@@ -65,6 +66,9 @@ export default function Tasks() {
   const [selectedSection, setSelectedSection] = useState("inbox");
   const [filterProject, setFilterProject] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [taskToComplete, setTaskToComplete] = useState(null);
+  const [completionNote, setCompletionNote] = useState("");
   
   const [formData, setFormData] = useState({
     title: "",
@@ -164,32 +168,49 @@ export default function Tasks() {
       // Uncomplete
       updateMutation.mutate({
         id: task.id,
-        data: { ...task, status: "pending", completed_at: null }
+        data: { ...task, status: "pending", completed_at: null, completion_note: null }
       });
     } else {
-      // Complete
-      const completed_at = new Date().toISOString();
-      
-      // If recurring, create next occurrence
-      if (task.is_recurring && task.recurrence_pattern) {
-        const nextDate = calculateNextOccurrence(task);
-        if (nextDate) {
-          await createMutation.mutateAsync({
-            ...task,
-            id: undefined,
-            due_date: format(nextDate, "yyyy-MM-dd"),
-            status: "pending",
-            completed_at: null,
-            parent_task_id: task.parent_task_id || task.id
-          });
-        }
-      }
-      
-      updateMutation.mutate({
-        id: task.id,
-        data: { ...task, status: "completed", completed_at }
-      });
+      // Show completion dialog
+      setTaskToComplete(task);
+      setShowCompleteDialog(true);
     }
+  };
+
+  const completeTask = async () => {
+    if (!taskToComplete) return;
+    
+    const completed_at = new Date().toISOString();
+    
+    // If recurring, create next occurrence
+    if (taskToComplete.is_recurring && taskToComplete.recurrence_pattern) {
+      const nextDate = calculateNextOccurrence(taskToComplete);
+      if (nextDate) {
+        await createMutation.mutateAsync({
+          ...taskToComplete,
+          id: undefined,
+          due_date: format(nextDate, "yyyy-MM-dd"),
+          status: "pending",
+          completed_at: null,
+          completion_note: null,
+          parent_task_id: taskToComplete.parent_task_id || taskToComplete.id
+        });
+      }
+    }
+    
+    updateMutation.mutate({
+      id: taskToComplete.id,
+      data: { 
+        ...taskToComplete, 
+        status: "completed", 
+        completed_at,
+        completion_note: completionNote || null
+      }
+    });
+    
+    setShowCompleteDialog(false);
+    setTaskToComplete(null);
+    setCompletionNote("");
   };
 
   const calculateNextOccurrence = (task) => {
@@ -715,6 +736,55 @@ export default function Tasks() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Complete Task Dialog */}
+      <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>השלמת משימה</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 bg-slate-50 rounded-lg">
+              <p className="font-medium text-slate-900">{taskToComplete?.title}</p>
+              {taskToComplete?.description && (
+                <p className="text-sm text-slate-600 mt-1">{taskToComplete.description}</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-2">
+                הוסף הערה (אופציונלי)
+              </label>
+              <textarea
+                value={completionNote}
+                onChange={(e) => setCompletionNote(e.target.value)}
+                placeholder="מה למדת? מה הצליח? מה ניתן לשפר?"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                onClick={completeTask}
+                className="flex-1 bg-green-500 hover:bg-green-600"
+              >
+                ✓ סמן כהושלם
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowCompleteDialog(false);
+                  setTaskToComplete(null);
+                  setCompletionNote("");
+                }}
+              >
+                ביטול
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -792,6 +862,12 @@ function TaskItem({ task, onToggle, onEdit, onDelete }) {
           )}
           {task.assigned_to_name && (
             <span>@{task.assigned_to_name}</span>
+          )}
+          {task.completion_note && (
+            <span className="flex items-center gap-1 text-green-600">
+              <MessageSquare className="w-3 h-3" />
+              {task.completion_note}
+            </span>
           )}
           {task.labels?.map((label, idx) => (
             <Badge key={idx} variant="outline" className="text-xs">

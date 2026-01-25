@@ -579,15 +579,6 @@ export default function Inventory() {
           <Star className="w-4 h-4 ml-1" />
           פריטים בסיסיים ({stapleCount})
         </Button>
-        <Button
-          variant={showMissingOnly ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowMissingOnly(!showMissingOnly)}
-          className={showMissingOnly ? "bg-red-500 hover:bg-red-600" : "border-red-200 text-red-600 hover:bg-red-50"}
-        >
-          <AlertTriangle className="w-4 h-4 ml-1" />
-          חוסרים ({missingCount})
-        </Button>
       </div>
 
       {items.length === 0 && !isLoading ? (
@@ -845,37 +836,49 @@ export default function Inventory() {
                                         ))}
                                       </div>
                                     )}
-                                    {item.status !== "out_of_stock" && (
-                                      <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                                    <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                                      {item.status === "out_of_stock" ? (
                                         <Button
-                                          variant="outline"
-                                          size="icon"
-                                          className="h-7 w-7"
-                                          onClick={() => updateQuantity(item, -1)}
-                                        >
-                                          <Minus className="w-3 h-3" />
-                                        </Button>
-                                        <span className="w-12 text-center font-semibold text-sm">
-                                          {item.quantity}
-                                        </span>
-                                        <Button
-                                          variant="outline"
-                                          size="icon"
-                                          className="h-7 w-7"
                                           onClick={() => updateQuantity(item, 1)}
+                                          className="h-7 text-xs bg-green-500 hover:bg-green-600 text-white font-semibold"
+                                          title="יש מלאי"
                                         >
-                                          <Plus className="w-3 h-3" />
+                                          <CheckCircle2 className="w-3 h-3 ml-1" />
+                                          יש מלאי
                                         </Button>
-                                      </div>
-                                    )}
-                                    <div className="flex items-center gap-1 pt-2 border-t border-slate-200">
-                                      <Button
-                                        onClick={() => markAsFinished(item)}
-                                        className="h-7 text-xs bg-red-500 hover:bg-red-600 text-white font-semibold"
-                                        title="נגמר"
-                                      >
-                                        נגמר
-                                      </Button>
+                                      ) : (
+                                        <>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            onClick={() => updateQuantity(item, -1)}
+                                          >
+                                            <Minus className="w-3 h-3" />
+                                          </Button>
+                                          <span className="w-12 text-center font-semibold text-sm">
+                                            {item.quantity}
+                                          </span>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            onClick={() => updateQuantity(item, 1)}
+                                          >
+                                            <Plus className="w-3 h-3" />
+                                          </Button>
+                                        </>
+                                      )}
+                                      <div className="flex-1" />
+                                      {item.status !== "out_of_stock" && (
+                                        <Button
+                                          onClick={() => markAsFinished(item)}
+                                          className="h-7 text-xs bg-red-500 hover:bg-red-600 text-white font-semibold"
+                                          title="נגמר"
+                                        >
+                                          נגמר
+                                        </Button>
+                                      )}
                                       <Button
                                         variant="ghost"
                                         size="icon"

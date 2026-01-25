@@ -28,10 +28,12 @@ import {
   Circle,
   AlertCircle,
   Clock,
-  User as UserIcon
+  User as UserIcon,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isPast } from "date-fns";
+import NotificationSettingsDialog from "@/components/NotificationSettingsDialog";
 
 const CATEGORIES = {
   shopping: { label: "קניות", icon: "🛒", color: "bg-blue-100 text-blue-700" },
@@ -51,6 +53,8 @@ export default function Tasks() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [filterStatus, setFilterStatus] = useState("pending");
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [selectedMemberForSettings, setSelectedMemberForSettings] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -162,7 +166,22 @@ export default function Tasks() {
         subtitle={`${pendingTasks.length} משימות בהמתנה`}
         action={() => setShowDialog(true)}
         actionLabel="הוסף משימה"
-      />
+      >
+        <Button
+          variant="outline"
+          onClick={() => {
+            const user = members[0];
+            if (user) {
+              setSelectedMemberForSettings({ id: user.id, name: user.name });
+              setShowNotificationSettings(true);
+            }
+          }}
+          className="gap-2"
+        >
+          <Bell className="w-4 h-4" />
+          הגדרות התראות
+        </Button>
+      </PageHeader>
 
       {/* Alert for overdue tasks */}
       {overdueTasks.length > 0 && (

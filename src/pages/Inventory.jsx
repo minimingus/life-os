@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { Edit } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import PageHeader from "@/components/ui/PageHeader";
@@ -607,142 +602,123 @@ export default function Inventory() {
                 description="כל הפריטים נגמרו או במלאי נמוך"
               />
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {Object.entries(CATEGORIES).map(([catKey, catData]) => {
                   const categoryItems = availableItems.filter(i => i.category === catKey);
                   if (categoryItems.length === 0) return null;
                   
                   return (
-                    <Collapsible key={catKey} defaultOpen={true}>
-                      <CollapsibleTrigger className="w-full">
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
-                          <ChevronDown className="w-5 h-5 text-slate-600" />
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", catData.color)}>
-                            <Package className="w-4 h-4" />
-                          </div>
-                          <span className="font-semibold text-slate-800">{catData.label}</span>
-                          <Badge variant="outline" className="ml-auto">{categoryItems.length}</Badge>
+                    <div key={catKey} className="space-y-2">
+                      <div className="flex items-center gap-2 px-2">
+                        <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0", catData.color)}>
+                          <Package className="w-3 h-3" />
                         </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="pt-2">
-                        <div className="space-y-2 pl-4">
-                          {categoryItems.map(item => {
-                   const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
-                   const LocationIcon = loc.icon;
-                   const expiryInfo = getExpiryInfo(item.expiry_date);
-                   const isExpanded = expandedItems[item.id];
+                        <span className="font-semibold text-slate-700 text-sm">{catData.label}</span>
+                        <Badge variant="outline" className="text-xs">{categoryItems.length}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {categoryItems.map(item => {
+                          const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
+                          const LocationIcon = loc.icon;
+                          const expiryInfo = getExpiryInfo(item.expiry_date);
 
-                   return (
-                     <Collapsible
-                       key={item.id}
-                       open={isExpanded}
-                       onOpenChange={(open) => setExpandedItems({...expandedItems, [item.id]: open})}
-                     >
-                       <CollapsibleTrigger asChild>
-                         <div 
-                           className={cn(
-                             "rounded-lg border p-3 hover:shadow-md transition-all cursor-pointer flex items-center gap-3",
-                             item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
-                             item.status === "low" ? "border-amber-200 bg-amber-50/50" :
-                             "bg-white border-slate-100"
-                           )}
-                         >
-                           <ChevronDown className={cn("w-4 h-4 transition-transform flex-shrink-0", isExpanded && "rotate-180")} />
-                           <p className="font-medium text-slate-800 flex-1">{item.name}</p>
-                           <span className="text-sm text-slate-500">{item.quantity} {UNITS[item.unit]}</span>
-                         </div>
-                       </CollapsibleTrigger>
-                       <CollapsibleContent className="pt-2">
-                         <div className="pl-8 space-y-2 bg-slate-50 p-3 rounded-lg">
-                           <div className="text-sm">
-                             <span className="text-slate-600 flex items-center gap-1">
-                               <LocationIcon className="w-3 h-3" />
-                               {loc.label}
-                             </span>
-                           </div>
-                           {item.status === "expired" && (
-                             <Badge variant="destructive" className="text-xs inline-block">פג תוקף</Badge>
-                           )}
-                           {item.status === "low" && (
-                             <Badge className="bg-amber-500 text-xs inline-block">מלאי נמוך</Badge>
-                           )}
-                           {expiryInfo && (
-                             <div className={cn("px-2 py-0.5 rounded-full text-xs inline-block ml-2", expiryInfo.color)}>
-                               תפוגה: {expiryInfo.text}
-                             </div>
-                           )}
-                           {item.is_staple && (
-                             <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm inline-block ml-2">
-                               <Star className="w-3 h-3 ml-1 fill-white" />
-                               חובה
-                             </Badge>
-                           )}
-                           {item.tags?.length > 0 && (
-                             <div className="flex flex-wrap gap-1 mt-2">
-                               {item.tags.map((tag, idx) => (
-                                 <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                   <Tag className="w-3 h-3 ml-1" />
-                                   {tag}
-                                 </Badge>
-                               ))}
-                             </div>
-                           )}
-                           <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
-                             <Button
-                               variant="outline"
-                               size="icon"
-                               className="h-7 w-7"
-                               onClick={() => updateQuantity(item, -1)}
-                             >
-                               <Minus className="w-3 h-3" />
-                             </Button>
-                             <span className="w-12 text-center font-semibold text-sm">
-                               {item.quantity}
-                             </span>
-                             <Button
-                               variant="outline"
-                               size="icon"
-                               className="h-7 w-7"
-                               onClick={() => updateQuantity(item, 1)}
-                             >
-                               <Plus className="w-3 h-3" />
-                             </Button>
-                             <div className="flex-1" />
-                             <Button
-                               onClick={() => markAsFinished(item)}
-                               className="h-7 text-xs bg-red-500 hover:bg-red-600 text-white font-semibold"
-                               title="נגמר"
-                             >
-                               נגמר
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="icon"
-                               onClick={() => addToShoppingList(item)}
-                               className="h-7 w-7 text-slate-400 hover:text-blue-500"
-                               title="הוסף לרשימה"
-                             >
-                               <ShoppingCart className="w-3 h-3" />
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="icon"
-                               onClick={() => deleteMutation.mutate(item.id)}
-                               className="h-7 w-7 text-slate-400 hover:text-rose-500"
-                             >
-                               <Trash2 className="w-3 h-3" />
-                             </Button>
-                           </div>
-                         </div>
-                       </CollapsibleContent>
-                     </Collapsible>
-                   );
-                   })}
-                   </div>
-                   </CollapsibleContent>
-                   </Collapsible>
-                   );
-                   })}
+                          return (
+                            <div 
+                              key={item.id}
+                              className={cn(
+                                "rounded-xl border-2 p-4 transition-all",
+                                item.status === "expired" ? "border-rose-300 bg-rose-50" :
+                                item.status === "low" ? "border-amber-300 bg-amber-50" :
+                                "bg-white border-slate-200"
+                              )}
+                            >
+                              {/* Header */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-slate-900 text-base mb-1">{item.name}</h4>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                                      <LocationIcon className="w-3 h-3" />
+                                      {loc.label}
+                                    </span>
+                                    {item.status === "expired" && (
+                                      <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
+                                    )}
+                                    {item.status === "low" && (
+                                      <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
+                                    )}
+                                    {item.is_staple && (
+                                      <Badge className="bg-amber-500 text-xs">
+                                        <Star className="w-3 h-3 ml-1 fill-white" />
+                                        חובה
+                                      </Badge>
+                                    )}
+                                    {expiryInfo && (
+                                      <span className={cn("px-2 py-0.5 rounded-full text-xs", expiryInfo.color)}>
+                                        {expiryInfo.text}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEdit(item)}
+                                  className="text-slate-400 hover:text-slate-600 -mt-1"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </div>
+
+                              {/* Quantity Controls - Large & Touch-Friendly */}
+                              <div className="flex items-center gap-3 mb-3">
+                                <Button
+                                  variant="outline"
+                                  size="lg"
+                                  className="h-12 w-12 rounded-xl border-2"
+                                  onClick={() => updateQuantity(item, -1)}
+                                >
+                                  <Minus className="w-5 h-5" />
+                                </Button>
+                                <div className="flex-1 text-center">
+                                  <div className="text-2xl font-bold text-slate-900">{item.quantity}</div>
+                                  <div className="text-xs text-slate-500">{UNITS[item.unit]}</div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="lg"
+                                  className="h-12 w-12 rounded-xl border-2 border-green-300 text-green-600 hover:bg-green-50"
+                                  onClick={() => updateQuantity(item, 1)}
+                                >
+                                  <Plus className="w-5 h-5" />
+                                </Button>
+                              </div>
+
+                              {/* Action Buttons - Large & Touch-Friendly */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  onClick={() => markAsFinished(item)}
+                                  className="h-11 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl"
+                                >
+                                  <AlertTriangle className="w-4 h-4 ml-2" />
+                                  נגמר
+                                </Button>
+                                <Button
+                                  onClick={() => addToShoppingList(item)}
+                                  variant="outline"
+                                  className="h-11 border-2 border-blue-300 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold"
+                                >
+                                  <ShoppingCart className="w-4 h-4 ml-2" />
+                                  לרשימה
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -754,157 +730,139 @@ export default function Inventory() {
                 description="כל הפריטים זמינים"
               />
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {Object.entries(CATEGORIES).map(([catKey, catData]) => {
                   const categoryItems = missingItems.filter(i => i.category === catKey);
                   if (categoryItems.length === 0) return null;
                   
                   return (
-                    <Collapsible key={catKey} defaultOpen={true}>
-                      <CollapsibleTrigger className="w-full">
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
-                          <ChevronDown className="w-5 h-5 text-red-600" />
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", catData.color)}>
-                            <Package className="w-4 h-4" />
-                          </div>
-                          <span className="font-semibold text-red-900">{catData.label}</span>
-                          <Badge className="ml-auto bg-red-600">{categoryItems.length}</Badge>
+                    <div key={catKey} className="space-y-2">
+                      <div className="flex items-center gap-2 px-2">
+                        <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0", catData.color)}>
+                          <Package className="w-3 h-3" />
                         </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="pt-2">
-                        <div className="space-y-2 pl-4">
-                          {categoryItems.map(item => {
-                            const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
-                            const LocationIcon = loc.icon;
-                            const expiryInfo = getExpiryInfo(item.expiry_date);
-                            const isExpanded = expandedItems[item.id];
-                            
-                            return (
-                              <Collapsible
-                                key={item.id}
-                                open={isExpanded}
-                                onOpenChange={(open) => setExpandedItems({...expandedItems, [item.id]: open})}
-                              >
-                                <CollapsibleTrigger asChild>
-                                  <div 
-                                    className={cn(
-                                      "rounded-lg border p-3 hover:shadow-md transition-all cursor-pointer flex items-center gap-3",
-                                      item.status === "out_of_stock" ? "border-red-400 bg-red-50" :
-                                      item.status === "expired" ? "border-rose-200 bg-rose-50/50" :
-                                      "border-amber-200 bg-amber-50/50"
-                                    )}
-                                  >
-                                    <ChevronDown className={cn("w-4 h-4 transition-transform flex-shrink-0", isExpanded && "rotate-180")} />
-                                    <p className="font-medium text-slate-800 flex-1">{item.name}</p>
+                        <span className="font-semibold text-red-900 text-sm">{catData.label}</span>
+                        <Badge className="bg-red-600 text-xs">{categoryItems.length}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {categoryItems.map(item => {
+                          const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
+                          const LocationIcon = loc.icon;
+                          const expiryInfo = getExpiryInfo(item.expiry_date);
+
+                          return (
+                            <div 
+                              key={item.id}
+                              className={cn(
+                                "rounded-xl border-2 p-4 transition-all",
+                                item.status === "out_of_stock" ? "border-red-400 bg-red-50" :
+                                item.status === "expired" ? "border-rose-300 bg-rose-50" :
+                                "border-amber-300 bg-amber-50"
+                              )}
+                            >
+                              {/* Header */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-slate-900 text-base mb-1">{item.name}</h4>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                                      <LocationIcon className="w-3 h-3" />
+                                      {loc.label}
+                                    </span>
                                     {item.status === "out_of_stock" && (
                                       <Badge className="bg-red-600 text-white text-xs">נגמר</Badge>
                                     )}
-                                  </div>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent className="pt-2">
-                                  <div className="pl-8 space-y-2 bg-slate-50 p-3 rounded-lg">
-                                    <div className="text-sm">
-                                      <span className="text-slate-600 flex items-center gap-1">
-                                        <LocationIcon className="w-3 h-3" />
-                                        {loc.label}
-                                      </span>
-                                    </div>
                                     {item.status === "expired" && (
-                                      <Badge variant="destructive" className="text-xs inline-block">פג תוקף</Badge>
+                                      <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
                                     )}
                                     {item.status === "low" && (
-                                      <Badge className="bg-amber-500 text-xs inline-block">מלאי נמוך</Badge>
-                                    )}
-                                    {expiryInfo && (
-                                      <div className={cn("px-2 py-0.5 rounded-full text-xs inline-block ml-2", expiryInfo.color)}>
-                                        תפוגה: {expiryInfo.text}
-                                      </div>
+                                      <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
                                     )}
                                     {item.is_staple && (
-                                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs shadow-sm inline-block ml-2">
+                                      <Badge className="bg-amber-500 text-xs">
                                         <Star className="w-3 h-3 ml-1 fill-white" />
                                         חובה
                                       </Badge>
                                     )}
-                                    {item.tags?.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-2">
-                                        {item.tags.map((tag, idx) => (
-                                          <Badge key={idx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                            <Tag className="w-3 h-3 ml-1" />
-                                            {tag}
-                                          </Badge>
-                                        ))}
-                                      </div>
+                                    {expiryInfo && (
+                                      <span className={cn("px-2 py-0.5 rounded-full text-xs", expiryInfo.color)}>
+                                        {expiryInfo.text}
+                                      </span>
                                     )}
-                                    <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
-                                      {item.status === "out_of_stock" ? (
-                                        <Button
-                                          onClick={() => updateQuantity(item, 1)}
-                                          className="h-7 text-xs bg-green-500 hover:bg-green-600 text-white font-semibold"
-                                          title="יש מלאי"
-                                        >
-                                          <CheckCircle2 className="w-3 h-3 ml-1" />
-                                          יש מלאי
-                                        </Button>
-                                      ) : (
-                                        <>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-7 w-7"
-                                            onClick={() => updateQuantity(item, -1)}
-                                          >
-                                            <Minus className="w-3 h-3" />
-                                          </Button>
-                                          <span className="w-12 text-center font-semibold text-sm">
-                                            {item.quantity}
-                                          </span>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-7 w-7"
-                                            onClick={() => updateQuantity(item, 1)}
-                                          >
-                                            <Plus className="w-3 h-3" />
-                                          </Button>
-                                        </>
-                                      )}
-                                      <div className="flex-1" />
-                                      {item.status !== "out_of_stock" && (
-                                        <Button
-                                          onClick={() => markAsFinished(item)}
-                                          className="h-7 text-xs bg-red-500 hover:bg-red-600 text-white font-semibold"
-                                          title="נגמר"
-                                        >
-                                          נגמר
-                                        </Button>
-                                      )}
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => addToShoppingList(item)}
-                                        className="h-7 w-7 text-slate-400 hover:text-blue-500"
-                                        title="הוסף לרשימה"
-                                      >
-                                        <ShoppingCart className="w-3 h-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => deleteMutation.mutate(item.id)}
-                                        className="h-7 w-7 text-slate-400 hover:text-rose-500"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
-                                    </div>
                                   </div>
-                                </CollapsibleContent>
-                              </Collapsible>
-                            );
-                          })}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEdit(item)}
+                                  className="text-slate-400 hover:text-slate-600 -mt-1"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </div>
+
+                              {/* Quantity Controls or Restock Button */}
+                              {item.status === "out_of_stock" ? (
+                                <Button
+                                  onClick={() => updateQuantity(item, 1)}
+                                  className="w-full h-14 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl mb-3 text-base"
+                                >
+                                  <CheckCircle2 className="w-5 h-5 ml-2" />
+                                  יש מלאי - עדכן
+                                </Button>
+                              ) : (
+                                <div className="flex items-center gap-3 mb-3">
+                                  <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="h-12 w-12 rounded-xl border-2"
+                                    onClick={() => updateQuantity(item, -1)}
+                                  >
+                                    <Minus className="w-5 h-5" />
+                                  </Button>
+                                  <div className="flex-1 text-center">
+                                    <div className="text-2xl font-bold text-slate-900">{item.quantity}</div>
+                                    <div className="text-xs text-slate-500">{UNITS[item.unit]}</div>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="h-12 w-12 rounded-xl border-2 border-green-300 text-green-600 hover:bg-green-50"
+                                    onClick={() => updateQuantity(item, 1)}
+                                  >
+                                    <Plus className="w-5 h-5" />
+                                  </Button>
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="grid grid-cols-2 gap-2">
+                                {item.status !== "out_of_stock" && (
+                                  <Button
+                                    onClick={() => markAsFinished(item)}
+                                    className="h-11 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl"
+                                  >
+                                    <AlertTriangle className="w-4 h-4 ml-2" />
+                                    נגמר
+                                  </Button>
+                                )}
+                                <Button
+                                  onClick={() => addToShoppingList(item)}
+                                  variant="outline"
+                                  className={cn(
+                                    "h-11 border-2 border-blue-300 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold",
+                                    item.status === "out_of_stock" && "col-span-2"
+                                  )}
+                                >
+                                  <ShoppingCart className="w-4 h-4 ml-2" />
+                                  הוסף לרשימת קניות
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })}
               </div>

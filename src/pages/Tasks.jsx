@@ -1,8 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -21,50 +19,70 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ListTodo,
   Plus,
-  Trash2,
-  CheckCircle2,
   Circle,
-  AlertCircle,
-  Clock,
-  User as UserIcon,
-  Bell
+  Calendar as CalendarIcon,
+  Flag,
+  Tag as TagIcon,
+  Inbox,
+  CalendarDays,
+  Filter,
+  Repeat,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, parseISO, isPast } from "date-fns";
-import NotificationSettingsDialog from "@/components/NotificationSettingsDialog";
+import { format, parseISO, isToday, isTomorrow, isThisWeek, addDays, addWeeks, addMonths, addYears, startOfWeek } from "date-fns";
+import { he } from "date-fns/locale";
 
-const CATEGORIES = {
-  shopping: { label: "קניות", icon: "🛒", color: "bg-blue-100 text-blue-700" },
-  cooking: { label: "בישול", icon: "🍳", color: "bg-orange-100 text-orange-700" },
-  cleaning: { label: "ניקיון", icon: "🧹", color: "bg-green-100 text-green-700" },
-  maintenance: { label: "תחזוקה", icon: "🔧", color: "bg-red-100 text-red-700" },
-  other: { label: "אחר", icon: "📌", color: "bg-slate-100 text-slate-700" }
+const PRIORITY_COLORS = {
+  1: "text-red-600",
+  2: "text-orange-500",
+  3: "text-blue-500",
+  4: "text-slate-400"
 };
 
-const STATUSES = {
-  pending: { label: "בהמתנה", icon: Circle, color: "text-slate-400" },
-  in_progress: { label: "בתהליך", icon: Clock, color: "text-amber-500" },
-  completed: { label: "הושלמה", icon: CheckCircle2, color: "text-green-600" }
+const RECURRENCE_PATTERNS = {
+  daily: "יומי",
+  weekly: "שבועי",
+  monthly: "חודשי",
+  yearly: "שנתי"
 };
+
+const WEEKDAYS = [
+  { value: 0, label: "א" },
+  { value: 1, label: "ב" },
+  { value: 2, label: "ג" },
+  { value: 3, label: "ד" },
+  { value: 4, label: "ה" },
+  { value: 5, label: "ו" },
+  { value: 6, label: "ש" }
+];
 
 export default function Tasks() {
   const [showDialog, setShowDialog] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [filterStatus, setFilterStatus] = useState("pending");
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [selectedMemberForSettings, setSelectedMemberForSettings] = useState(null);
+  const [quickAddValue, setQuickAddValue] = useState("");
+  const [selectedSection, setSelectedSection] = useState("inbox");
+  const [filterProject, setFilterProject] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
+  
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "other",
-    priority: "medium",
+    project: "",
+    priority: 4,
+    labels: [],
     assigned_to_id: "",
     assigned_to_name: "",
     due_date: "",
+    due_time: "",
+    is_recurring: false,
+    recurrence_pattern: "weekly",
+    recurrence_interval: 1,
+    recurrence_days: [],
     status: "pending"
   });
+  const [newLabel, setNewLabel] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -82,7 +100,7 @@ export default function Tasks() {
     mutationFn: (data) => base44.entities.Task.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      resetForm();
+      setQuickAddValue("");
     }
   });
 
@@ -90,7 +108,6 @@ export default function Tasks() {
     mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      resetForm();
     }
   });
 
@@ -105,13 +122,20 @@ export default function Tasks() {
     setFormData({
       title: "",
       description: "",
-      category: "other",
-      priority: "medium",
+      project: "",
+      priority: 4,
+      labels: [],
       assigned_to_id: "",
       assigned_to_name: "",
       due_date: "",
+      due_time: "",
+      is_recurring: false,
+      recurrence_pattern: "weekly",
+      recurrence_interval: 1,
+      recurrence_days: [],
       status: "pending"
     });
+    setNewLabel("");
   };
 
   const handleSubmit = (e) => {
@@ -121,15 +145,79 @@ export default function Tasks() {
     } else {
       createMutation.mutate(formData);
     }
+    resetForm();
   };
 
-  const toggleStatus = (task) => {
-    const nextStatus = task.status === "pending" ? "in_progress" : 
-                      task.status === "in_progress" ? "completed" : "pending";
-    updateMutation.mutate({
-      id: task.id,
-      data: { ...task, status: nextStatus, completed_at: nextStatus === "completed" ? new Date().toISOString() : null }
+  const handleQuickAdd = (e) => {
+    e.preventDefault();
+    if (!quickAddValue.trim()) return;
+    
+    createMutation.mutate({
+      title: quickAddValue,
+      status: "pending",
+      priority: 4
     });
+  };
+
+  const toggleComplete = async (task) => {
+    if (task.status === "completed") {
+      // Uncomplete
+      updateMutation.mutate({
+        id: task.id,
+        data: { ...task, status: "pending", completed_at: null }
+      });
+    } else {
+      // Complete
+      const completed_at = new Date().toISOString();
+      
+      // If recurring, create next occurrence
+      if (task.is_recurring && task.recurrence_pattern) {
+        const nextDate = calculateNextOccurrence(task);
+        if (nextDate) {
+          await createMutation.mutateAsync({
+            ...task,
+            id: undefined,
+            due_date: format(nextDate, "yyyy-MM-dd"),
+            status: "pending",
+            completed_at: null,
+            parent_task_id: task.parent_task_id || task.id
+          });
+        }
+      }
+      
+      updateMutation.mutate({
+        id: task.id,
+        data: { ...task, status: "completed", completed_at }
+      });
+    }
+  };
+
+  const calculateNextOccurrence = (task) => {
+    if (!task.due_date) return null;
+    
+    const currentDate = parseISO(task.due_date);
+    const interval = task.recurrence_interval || 1;
+    
+    switch (task.recurrence_pattern) {
+      case "daily":
+        return addDays(currentDate, interval);
+      case "weekly":
+        if (task.recurrence_days?.length > 0) {
+          // Find next day in the cycle
+          const currentDay = currentDate.getDay();
+          const sortedDays = [...task.recurrence_days].sort((a, b) => a - b);
+          const nextDay = sortedDays.find(d => d > currentDay) || sortedDays[0];
+          const daysToAdd = nextDay > currentDay ? nextDay - currentDay : 7 - currentDay + nextDay;
+          return addDays(currentDate, daysToAdd);
+        }
+        return addWeeks(currentDate, interval);
+      case "monthly":
+        return addMonths(currentDate, interval);
+      case "yearly":
+        return addYears(currentDate, interval);
+      default:
+        return null;
+    }
   };
 
   const openEdit = (item) => {
@@ -137,269 +225,488 @@ export default function Tasks() {
     setFormData({
       title: item.title || "",
       description: item.description || "",
-      category: item.category || "other",
-      priority: item.priority || "medium",
+      project: item.project || "",
+      priority: item.priority || 4,
+      labels: item.labels || [],
       assigned_to_id: item.assigned_to_id || "",
       assigned_to_name: item.assigned_to_name || "",
       due_date: item.due_date || "",
+      due_time: item.due_time || "",
+      is_recurring: item.is_recurring || false,
+      recurrence_pattern: item.recurrence_pattern || "weekly",
+      recurrence_interval: item.recurrence_interval || 1,
+      recurrence_days: item.recurrence_days || [],
       status: item.status || "pending"
     });
     setShowDialog(true);
   };
 
-  const filteredTasks = filterStatus === "all" 
-    ? tasks 
-    : tasks.filter(t => t.status === filterStatus);
+  const addLabel = () => {
+    if (newLabel.trim() && !formData.labels.includes(newLabel.trim())) {
+      setFormData({ ...formData, labels: [...formData.labels, newLabel.trim()] });
+      setNewLabel("");
+    }
+  };
 
-  const pendingTasks = filteredTasks.filter(t => t.status === "pending");
-  const inProgressTasks = filteredTasks.filter(t => t.status === "in_progress");
-  const completedTasks = filteredTasks.filter(t => t.status === "completed");
+  const removeLabel = (label) => {
+    setFormData({ ...formData, labels: formData.labels.filter(l => l !== label) });
+  };
 
-  const overdueTasks = pendingTasks.filter(t => 
-    t.due_date && isPast(parseISO(t.due_date))
+  const toggleRecurrenceDay = (day) => {
+    const days = formData.recurrence_days || [];
+    if (days.includes(day)) {
+      setFormData({ ...formData, recurrence_days: days.filter(d => d !== day) });
+    } else {
+      setFormData({ ...formData, recurrence_days: [...days, day].sort() });
+    }
+  };
+
+  // Organize tasks by sections
+  const activeTasks = tasks.filter(t => t.status !== "completed");
+  const completedTasks = tasks.filter(t => t.status === "completed");
+
+  const todayTasks = activeTasks.filter(t => 
+    t.due_date && isToday(parseISO(t.due_date))
+  );
+  
+  const tomorrowTasks = activeTasks.filter(t => 
+    t.due_date && isTomorrow(parseISO(t.due_date))
+  );
+  
+  const thisWeekTasks = activeTasks.filter(t => 
+    t.due_date && isThisWeek(parseISO(t.due_date), { locale: he }) && 
+    !isToday(parseISO(t.due_date)) && !isTomorrow(parseISO(t.due_date))
+  );
+  
+  const inboxTasks = activeTasks.filter(t => !t.due_date);
+  
+  const overdueTasks = activeTasks.filter(t => 
+    t.due_date && parseISO(t.due_date) < new Date() && 
+    !isToday(parseISO(t.due_date))
   );
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="משימות"
-        subtitle={`${pendingTasks.length} משימות בהמתנה`}
-        action={() => setShowDialog(true)}
-        actionLabel="הוסף משימה"
-      >
-        <Button
-          variant="outline"
-          onClick={() => {
-            const user = members[0];
-            if (user) {
-              setSelectedMemberForSettings({ id: user.id, name: user.name });
-              setShowNotificationSettings(true);
-            }
-          }}
-          className="gap-2"
-        >
-          <Bell className="w-4 h-4" />
-          הגדרות התראות
-        </Button>
-      </PageHeader>
+  // Apply project filter
+  const filterByProject = (taskList) => {
+    if (filterProject === "all") return taskList;
+    return taskList.filter(t => t.project === filterProject);
+  };
 
-      {/* Alert for overdue tasks */}
-      {overdueTasks.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-red-700">{overdueTasks.length} משימות逾期</p>
-              <p className="text-sm text-red-600 mt-1">יש משימות שהתאריך האחרון שלהן חלף</p>
+  // Get unique projects
+  const projects = [...new Set(tasks.map(t => t.project).filter(Boolean))];
+
+  // Determine which tasks to show
+  let displayTasks = [];
+  let sectionTitle = "";
+  
+  switch (selectedSection) {
+    case "today":
+      displayTasks = filterByProject(todayTasks);
+      sectionTitle = "היום";
+      break;
+    case "tomorrow":
+      displayTasks = filterByProject(tomorrowTasks);
+      sectionTitle = "מחר";
+      break;
+    case "week":
+      displayTasks = filterByProject(thisWeekTasks);
+      sectionTitle = "השבוע";
+      break;
+    case "completed":
+      displayTasks = filterByProject(completedTasks);
+      sectionTitle = "הושלמו";
+      break;
+    default:
+      displayTasks = filterByProject(inboxTasks);
+      sectionTitle = "תיבת דואר נכנס";
+  }
+
+  return (
+    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-0 -m-4 lg:-m-8">
+      {/* Sidebar */}
+      <div className="lg:w-64 bg-slate-50 border-b lg:border-l border-slate-200 p-4 lg:p-6 overflow-y-auto">
+        <Button
+          onClick={() => setShowDialog(true)}
+          className="w-full bg-red-500 hover:bg-red-600 mb-6 h-10"
+        >
+          <Plus className="w-4 h-4 ml-2" />
+          הוסף משימה
+        </Button>
+
+        <div className="space-y-1 mb-6">
+          <button
+            onClick={() => setSelectedSection("inbox")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              selectedSection === "inbox" 
+                ? "bg-slate-200 text-slate-900 font-medium" 
+                : "text-slate-700 hover:bg-slate-100"
+            )}
+          >
+            <Inbox className="w-4 h-4" />
+            תיבת דואר נכנס
+            {inboxTasks.length > 0 && (
+              <span className="mr-auto text-xs text-slate-500">{inboxTasks.length}</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setSelectedSection("today")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              selectedSection === "today" 
+                ? "bg-slate-200 text-slate-900 font-medium" 
+                : "text-slate-700 hover:bg-slate-100"
+            )}
+          >
+            <CalendarIcon className="w-4 h-4 text-green-600" />
+            היום
+            {todayTasks.length > 0 && (
+              <span className="mr-auto text-xs text-slate-500">{todayTasks.length}</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setSelectedSection("tomorrow")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              selectedSection === "tomorrow" 
+                ? "bg-slate-200 text-slate-900 font-medium" 
+                : "text-slate-700 hover:bg-slate-100"
+            )}
+          >
+            <CalendarDays className="w-4 h-4 text-amber-600" />
+            מחר
+            {tomorrowTasks.length > 0 && (
+              <span className="mr-auto text-xs text-slate-500">{tomorrowTasks.length}</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setSelectedSection("week")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              selectedSection === "week" 
+                ? "bg-slate-200 text-slate-900 font-medium" 
+                : "text-slate-700 hover:bg-slate-100"
+            )}
+          >
+            <CalendarDays className="w-4 h-4 text-blue-600" />
+            השבוע
+            {thisWeekTasks.length > 0 && (
+              <span className="mr-auto text-xs text-slate-500">{thisWeekTasks.length}</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setSelectedSection("completed")}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              selectedSection === "completed" 
+                ? "bg-slate-200 text-slate-900 font-medium" 
+                : "text-slate-700 hover:bg-slate-100"
+            )}
+          >
+            ✓ הושלמו
+            {completedTasks.length > 0 && (
+              <span className="mr-auto text-xs text-slate-500">{completedTasks.length}</span>
+            )}
+          </button>
+        </div>
+
+        {projects.length > 0 && (
+          <div className="border-t border-slate-200 pt-4">
+            <h3 className="text-xs font-semibold text-slate-500 mb-2 px-3">פרויקטים</h3>
+            <div className="space-y-1">
+              {projects.map(project => {
+                const count = activeTasks.filter(t => t.project === project).length;
+                return (
+                  <button
+                    key={project}
+                    onClick={() => setFilterProject(filterProject === project ? "all" : project)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
+                      filterProject === project
+                        ? "bg-slate-200 text-slate-900 font-medium"
+                        : "text-slate-700 hover:bg-slate-100"
+                    )}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    {project}
+                    {count > 0 && (
+                      <span className="mr-auto text-xs text-slate-500">{count}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Status Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={filterStatus === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterStatus("all")}
-          className={filterStatus === "all" ? "bg-blue-500" : ""}
-        >
-          הכל
-        </Button>
-        {Object.entries(STATUSES).map(([key, { label }]) => {
-          const count = tasks.filter(t => t.status === key).length;
-          return (
-            <Button
-              key={key}
-              variant={filterStatus === key ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatus(key)}
-              className={filterStatus === key ? "bg-blue-500" : ""}
-            >
-              {label} ({count})
-            </Button>
-          );
-        })}
+        )}
       </div>
 
-      {tasks.length === 0 && !isLoading ? (
-        <EmptyState
-          icon={ListTodo}
-          title="אין משימות"
-          description="הוסף משימות להנהל את המשפחה"
-          action={() => setShowDialog(true)}
-          actionLabel="הוסף משימה"
-        />
-      ) : (
-        <div className="space-y-4">
-          {/* Pending Tasks */}
-          {pendingTasks.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                <Circle className="w-4 h-4 text-slate-400" />
-                בהמתנה ({pendingTasks.length})
-              </h3>
-              <div className="space-y-2">
-                {pendingTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggle={() => toggleStatus(task)}
-                    onEdit={() => openEdit(task)}
-                    onDelete={() => deleteMutation.mutate(task.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col bg-white overflow-hidden">
+        {/* Header */}
+        <div className="border-b border-slate-200 p-4 lg:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-slate-900">{sectionTitle}</h1>
+            {filterProject !== "all" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFilterProject("all")}
+                className="text-slate-600"
+              >
+                <X className="w-4 h-4 ml-1" />
+                נקה סינון
+              </Button>
+            )}
+          </div>
 
-          {/* In Progress Tasks */}
-          {inProgressTasks.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-500" />
-                בתהליך ({inProgressTasks.length})
-              </h3>
-              <div className="space-y-2">
-                {inProgressTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggle={() => toggleStatus(task)}
-                    onEdit={() => openEdit(task)}
-                    onDelete={() => deleteMutation.mutate(task.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Quick Add */}
+          <form onSubmit={handleQuickAdd} className="flex gap-2">
+            <Input
+              value={quickAddValue}
+              onChange={(e) => setQuickAddValue(e.target.value)}
+              placeholder="הקלד משימה חדשה..."
+              className="flex-1"
+            />
+            <Button type="submit" size="icon" variant="ghost">
+              <Plus className="w-5 h-5" />
+            </Button>
+          </form>
 
-          {/* Completed Tasks */}
-          {completedTasks.length > 0 && (
-            <div className="space-y-2 opacity-60">
-              <h3 className="font-semibold text-slate-600 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                הושלמו ({completedTasks.length})
-              </h3>
-              <div className="space-y-2">
-                {completedTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggle={() => toggleStatus(task)}
-                    onEdit={() => openEdit(task)}
-                    onDelete={() => deleteMutation.mutate(task.id)}
-                  />
-                ))}
-              </div>
+          {overdueTasks.length > 0 && selectedSection !== "completed" && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700 font-medium">
+                {overdueTasks.length} משימות באיחור
+              </p>
             </div>
           )}
         </div>
-      )}
+
+        {/* Tasks List */}
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          {displayTasks.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-400 text-sm">אין משימות כאן</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {displayTasks.map(task => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onToggle={() => toggleComplete(task)}
+                  onEdit={() => openEdit(task)}
+                  onDelete={() => deleteMutation.mutate(task.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>{editItem ? "עריכת משימה" : "הוספת משימה"}</DialogTitle>
+            <DialogTitle>{editItem ? "עריכת משימה" : "משימה חדשה"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-slate-700">כותרת</label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="למשל: קנות חלב"
-                className="mt-1"
+                placeholder="שם המשימה"
+                className="text-base font-medium"
                 required
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700">תיאור</label>
               <Input
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="פרטים נוספים..."
-                className="mt-1"
+                placeholder="תיאור"
+                className="text-sm"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-slate-700">קטגוריה</label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(v) => setFormData({ ...formData, category: v })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(CATEGORIES).map(([key, { label }]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700">עדיפות</label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(v) => setFormData({ ...formData, priority: v })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">נמוכה</SelectItem>
-                    <SelectItem value="medium">רגילה</SelectItem>
-                    <SelectItem value="high">דחוף</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700">אחראי</label>
-                <Select
-                  value={formData.assigned_to_id}
-                  onValueChange={(v) => {
-                    const member = members.find(m => m.id === v);
-                    setFormData({
-                      ...formData,
-                      assigned_to_id: v,
-                      assigned_to_name: member?.name || ""
-                    });
-                  }}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="בחר בן משפחה" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members.map(member => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700">תאריך סיום</label>
+                <label className="text-xs text-slate-600 mb-1 block">תאריך</label>
                 <Input
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-600 mb-1 block">שעה</label>
+                <Input
+                  type="time"
+                  value={formData.due_time}
+                  onChange={(e) => setFormData({ ...formData, due_time: e.target.value })}
                 />
               </div>
             </div>
 
+            <div>
+              <label className="text-xs text-slate-600 mb-1 block">עדיפות</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4].map(p => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, priority: p })}
+                    className={cn(
+                      "flex-1 py-2 rounded-lg border-2 transition-all",
+                      formData.priority === p
+                        ? "border-red-500 bg-red-50"
+                        : "border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    <Flag className={cn("w-4 h-4 mx-auto", PRIORITY_COLORS[p])} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-600 mb-1 block">פרויקט</label>
+              <Input
+                value={formData.project}
+                onChange={(e) => setFormData({ ...formData, project: e.target.value })}
+                placeholder="שם הפרויקט"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-600 mb-1 block">תגיות</label>
+              <div className="flex gap-2 mb-2">
+                <Input
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLabel())}
+                  placeholder="הוסף תגית"
+                  className="flex-1"
+                />
+                <Button type="button" onClick={addLabel} size="sm" variant="outline">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              {formData.labels.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.labels.map((label, idx) => (
+                    <Badge key={idx} variant="outline" className="gap-1">
+                      {label}
+                      <button type="button" onClick={() => removeLabel(label)}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-600 mb-1 block">אחראי</label>
+              <Select
+                value={formData.assigned_to_id}
+                onValueChange={(v) => {
+                  const member = members.find(m => m.id === v);
+                  setFormData({
+                    ...formData,
+                    assigned_to_id: v,
+                    assigned_to_name: member?.name || ""
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר בן משפחה" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map(member => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox
+                  id="recurring"
+                  checked={formData.is_recurring}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_recurring: checked })}
+                />
+                <label htmlFor="recurring" className="text-sm font-medium flex items-center gap-2">
+                  <Repeat className="w-4 h-4" />
+                  משימה חוזרת
+                </label>
+              </div>
+
+              {formData.is_recurring && (
+                <div className="space-y-3 pr-6">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-600 mb-1 block">תבנית</label>
+                      <Select
+                        value={formData.recurrence_pattern}
+                        onValueChange={(v) => setFormData({ ...formData, recurrence_pattern: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(RECURRENCE_PATTERNS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-600 mb-1 block">כל</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={formData.recurrence_interval}
+                        onChange={(e) => setFormData({ ...formData, recurrence_interval: parseInt(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  {formData.recurrence_pattern === "weekly" && (
+                    <div>
+                      <label className="text-xs text-slate-600 mb-2 block">ימים</label>
+                      <div className="flex gap-1">
+                        {WEEKDAYS.map(day => (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => toggleRecurrenceDay(day.value)}
+                            className={cn(
+                              "flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-all",
+                              formData.recurrence_days?.includes(day.value)
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-slate-200 text-slate-600 hover:border-slate-300"
+                            )}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-4">
-              <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600">
-                {editItem ? "עדכן" : "הוסף"}
+              <Button type="submit" className="flex-1 bg-red-500 hover:bg-red-600">
+                {editItem ? "שמור" : "הוסף משימה"}
               </Button>
               <Button type="button" variant="outline" onClick={resetForm}>
                 ביטול
@@ -408,33 +715,20 @@ export default function Tasks() {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Notification Settings Dialog */}
-      {selectedMemberForSettings && (
-        <NotificationSettingsDialog
-          open={showNotificationSettings}
-          onOpenChange={setShowNotificationSettings}
-          memberId={selectedMemberForSettings.id}
-          memberName={selectedMemberForSettings.name}
-        />
-      )}
     </div>
   );
 }
 
-function TaskCard({ task, onToggle, onEdit, onDelete }) {
-  const cat = CATEGORIES[task.category] || CATEGORIES.other;
-  const StatusIcon = STATUSES[task.status]?.icon || Circle;
-  const isOverdue = task.due_date && task.status !== "completed" && isPast(parseISO(task.due_date));
+function TaskItem({ task, onToggle, onEdit, onDelete }) {
+  const isOverdue = task.due_date && task.status !== "completed" && 
+    parseISO(task.due_date) < new Date() && !isToday(parseISO(task.due_date));
 
   return (
     <div
       className={cn(
-        "flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer",
-        task.status === "completed" ? "bg-slate-50 border-slate-100" :
-        isOverdue ? "bg-red-50 border-red-200" :
-        task.status === "in_progress" ? "bg-amber-50 border-amber-200" :
-        "bg-white border-slate-100 hover:border-slate-300"
+        "group flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer border border-transparent",
+        task.status === "completed" && "opacity-50",
+        isOverdue && "bg-red-50/50"
       )}
       onClick={onEdit}
     >
@@ -443,61 +737,69 @@ function TaskCard({ task, onToggle, onEdit, onDelete }) {
           e.stopPropagation();
           onToggle();
         }}
-        className="mt-1 flex-shrink-0 hover:scale-110 transition-transform"
+        className="mt-0.5 flex-shrink-0"
       >
-        <StatusIcon className={cn(
-          "w-6 h-6",
-          STATUSES[task.status]?.color || "text-slate-400"
-        )} />
+        {task.status === "completed" ? (
+          <div className="w-5 h-5 rounded-full bg-slate-400 flex items-center justify-center">
+            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className={cn(
+            "w-5 h-5 rounded-full border-2 hover:border-slate-400 transition-colors",
+            task.priority === 1 ? "border-red-500" :
+            task.priority === 2 ? "border-orange-500" :
+            task.priority === 3 ? "border-blue-500" :
+            "border-slate-300"
+          )} />
+        )}
       </button>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h4 className={cn(
-            "font-medium",
-            task.status === "completed" ? "line-through text-slate-500" : "text-slate-800"
+        <div className="flex items-center gap-2">
+          <p className={cn(
+            "text-sm font-medium",
+            task.status === "completed" ? "line-through text-slate-500" : "text-slate-900"
           )}>
             {task.title}
-          </h4>
-          <Badge className={cat.color}>{cat.label}</Badge>
-          {task.priority === "high" && (
-            <Badge className="bg-red-100 text-red-700">דחוף</Badge>
+          </p>
+          {task.is_recurring && (
+            <Repeat className="w-3 h-3 text-slate-400" />
           )}
         </div>
-        
+
         {task.description && (
-          <p className="text-sm text-slate-600 mt-1">{task.description}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{task.description}</p>
         )}
 
-        <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 flex-wrap">
-          {task.assigned_to_name && (
-            <span className="flex items-center gap-1">
-              <UserIcon className="w-3 h-3" />
-              {task.assigned_to_name}
-            </span>
-          )}
+        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
           {task.due_date && (
-            <span className={isOverdue && task.status !== "completed" ? "text-red-600 font-medium" : ""}>
-              📅 {format(parseISO(task.due_date), "dd/MM/yyyy")}
+            <span className={cn(
+              "flex items-center gap-1",
+              isOverdue && "text-red-600 font-medium"
+            )}>
+              <CalendarIcon className="w-3 h-3" />
+              {format(parseISO(task.due_date), "d בMMM", { locale: he })}
+              {task.due_time && ` ${task.due_time}`}
             </span>
           )}
-          {task.related_item_name && (
-            <span className="text-blue-600">📌 {task.related_item_name}</span>
+          {task.project && (
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              {task.project}
+            </span>
           )}
+          {task.assigned_to_name && (
+            <span>@{task.assigned_to_name}</span>
+          )}
+          {task.labels?.map((label, idx) => (
+            <Badge key={idx} variant="outline" className="text-xs">
+              {label}
+            </Badge>
+          ))}
         </div>
       </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="text-slate-400 hover:text-rose-500 flex-shrink-0"
-      >
-        <Trash2 className="w-4 h-4" />
-      </Button>
     </div>
   );
 }

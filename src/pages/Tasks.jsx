@@ -389,6 +389,16 @@ export default function Tasks() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Notification Settings Dialog */}
+      {selectedMemberForSettings && (
+        <NotificationSettingsDialog
+          open={showNotificationSettings}
+          onOpenChange={setShowNotificationSettings}
+          memberId={selectedMemberForSettings.id}
+          memberName={selectedMemberForSettings.name}
+        />
+      )}
     </div>
   );
 }

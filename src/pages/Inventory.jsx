@@ -670,8 +670,8 @@ export default function Inventory() {
                                 </Button>
                               </div>
 
-                              {/* Quantity Controls - Compact */}
-                              <div className="flex items-center gap-1.5 mb-1.5">
+                              {/* Quantity Controls with Action Icons */}
+                              <div className="flex items-center gap-1.5">
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -692,26 +692,24 @@ export default function Inventory() {
                                 >
                                   <Plus className="w-3 h-3" />
                                 </Button>
-                              </div>
-
-                              {/* Action Buttons - Compact */}
-                              <div className="grid grid-cols-2 gap-1.5">
+                                <div className="w-px h-6 bg-slate-200 mx-0.5" />
                                 <Button
-                                  onClick={() => markAsFinished(item)}
+                                  variant="ghost"
                                   size="sm"
-                                  className="h-7 bg-red-500 hover:bg-red-600 text-white text-[10px] rounded-md p-0"
+                                  onClick={() => markAsFinished(item)}
+                                  className="h-7 w-7 rounded-md p-0 text-red-500 hover:bg-red-50"
+                                  title="נגמר"
                                 >
-                                  <AlertTriangle className="w-3 h-3 ml-0.5" />
-                                  נגמר
+                                  <AlertTriangle className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
-                                  onClick={() => addToShoppingList(item)}
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
-                                  className="h-7 border-blue-300 text-blue-600 hover:bg-blue-50 text-[10px] rounded-md p-0"
+                                  onClick={() => addToShoppingList(item)}
+                                  className="h-7 w-7 rounded-md p-0 text-blue-500 hover:bg-blue-50"
+                                  title="הוסף לרשימה"
                                 >
-                                  <ShoppingCart className="w-3 h-3 ml-0.5" />
-                                  לרשימה
+                                  <ShoppingCart className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </div>
@@ -805,15 +803,26 @@ export default function Inventory() {
 
                               {/* Restock Button for Out of Stock */}
                               {item.status === "out_of_stock" ? (
-                                <Button
-                                  onClick={() => updateQuantity(item, 1)}
-                                  className="w-full h-8 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md mb-1.5 text-xs"
-                                >
-                                  <CheckCircle2 className="w-3.5 h-3.5 ml-1" />
-                                  חזר מלאי
-                                </Button>
+                                <div className="flex items-center gap-1.5">
+                                  <Button
+                                    onClick={() => updateQuantity(item, 1)}
+                                    className="flex-1 h-7 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md text-xs"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 ml-1" />
+                                    חזר מלאי
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => addToShoppingList(item)}
+                                    className="h-7 w-7 rounded-md p-0 text-blue-500 hover:bg-blue-50"
+                                    title="הוסף לרשימה"
+                                  >
+                                    <ShoppingCart className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
                               ) : (
-                                <div className="flex items-center gap-1.5 mb-1.5">
+                                <div className="flex items-center gap-1.5">
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -834,34 +843,27 @@ export default function Inventory() {
                                   >
                                     <Plus className="w-3 h-3" />
                                   </Button>
+                                  <div className="w-px h-6 bg-slate-200 mx-0.5" />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => markAsFinished(item)}
+                                    className="h-7 w-7 rounded-md p-0 text-red-500 hover:bg-red-50"
+                                    title="נגמר"
+                                  >
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => addToShoppingList(item)}
+                                    className="h-7 w-7 rounded-md p-0 text-blue-500 hover:bg-blue-50"
+                                    title="הוסף לרשימה"
+                                  >
+                                    <ShoppingCart className="w-3.5 h-3.5" />
+                                  </Button>
                                 </div>
                               )}
-
-                              {/* Action Buttons */}
-                              <div className={cn("grid gap-1.5", item.status === "out_of_stock" ? "grid-cols-1" : "grid-cols-2")}>
-                                {item.status !== "out_of_stock" && (
-                                  <Button
-                                    onClick={() => markAsFinished(item)}
-                                    size="sm"
-                                    className="h-7 bg-red-500 hover:bg-red-600 text-white text-[10px] rounded-md p-0"
-                                  >
-                                    <AlertTriangle className="w-3 h-3 ml-0.5" />
-                                    נגמר
-                                  </Button>
-                                )}
-                                <Button
-                                  onClick={() => addToShoppingList(item)}
-                                  variant="outline"
-                                  size="sm"
-                                  className={cn(
-                                    "h-7 border-blue-300 text-blue-600 hover:bg-blue-50 text-[10px] rounded-md p-0",
-                                    item.status === "out_of_stock" && "col-span-1"
-                                  )}
-                                >
-                                  <ShoppingCart className="w-3 h-3 ml-0.5" />
-                                  לרשימה
-                                </Button>
-                              </div>
                             </div>
                           );
                         })}

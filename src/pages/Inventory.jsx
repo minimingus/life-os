@@ -626,35 +626,35 @@ export default function Inventory() {
                             <div 
                               key={item.id}
                               className={cn(
-                                "rounded-xl border-2 p-4 transition-all",
+                                "rounded-lg border p-3 transition-all",
                                 item.status === "expired" ? "border-rose-300 bg-rose-50" :
                                 item.status === "low" ? "border-amber-300 bg-amber-50" :
                                 "bg-white border-slate-200"
                               )}
                             >
                               {/* Header */}
-                              <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-slate-900 text-base mb-1">{item.name}</h4>
-                                  <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-semibold text-slate-900 text-sm mb-1">{item.name}</h4>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-xs text-slate-500 flex items-center gap-1">
                                       <LocationIcon className="w-3 h-3" />
                                       {loc.label}
                                     </span>
                                     {item.status === "expired" && (
-                                      <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
+                                      <Badge variant="destructive" className="text-xs h-5">פג תוקף</Badge>
                                     )}
                                     {item.status === "low" && (
-                                      <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
+                                      <Badge className="bg-amber-500 text-xs h-5">נמוך</Badge>
                                     )}
                                     {item.is_staple && (
-                                      <Badge className="bg-amber-500 text-xs">
+                                      <Badge className="bg-amber-500 text-xs h-5">
                                         <Star className="w-3 h-3 ml-1 fill-white" />
                                         חובה
                                       </Badge>
                                     )}
                                     {expiryInfo && (
-                                      <span className={cn("px-2 py-0.5 rounded-full text-xs", expiryInfo.color)}>
+                                      <span className={cn("px-1.5 py-0.5 rounded text-xs", expiryInfo.color)}>
                                         {expiryInfo.text}
                                       </span>
                                     )}
@@ -664,51 +664,53 @@ export default function Inventory() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => openEdit(item)}
-                                  className="text-slate-400 hover:text-slate-600 -mt-1"
+                                  className="text-slate-400 hover:text-slate-600 h-7 w-7"
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
 
-                              {/* Quantity Controls - Large & Touch-Friendly */}
-                              <div className="flex items-center gap-3 mb-3">
+                              {/* Quantity Controls - Compact */}
+                              <div className="flex items-center gap-2 mb-2">
                                 <Button
                                   variant="outline"
-                                  size="lg"
-                                  className="h-12 w-12 rounded-xl border-2"
+                                  size="sm"
+                                  className="h-9 w-9 rounded-lg"
                                   onClick={() => updateQuantity(item, -1)}
                                 >
-                                  <Minus className="w-5 h-5" />
+                                  <Minus className="w-4 h-4" />
                                 </Button>
                                 <div className="flex-1 text-center">
-                                  <div className="text-2xl font-bold text-slate-900">{item.quantity}</div>
+                                  <div className="text-xl font-bold text-slate-900">{item.quantity}</div>
                                   <div className="text-xs text-slate-500">{UNITS[item.unit]}</div>
                                 </div>
                                 <Button
                                   variant="outline"
-                                  size="lg"
-                                  className="h-12 w-12 rounded-xl border-2 border-green-300 text-green-600 hover:bg-green-50"
+                                  size="sm"
+                                  className="h-9 w-9 rounded-lg border-green-300 text-green-600 hover:bg-green-50"
                                   onClick={() => updateQuantity(item, 1)}
                                 >
-                                  <Plus className="w-5 h-5" />
+                                  <Plus className="w-4 h-4" />
                                 </Button>
                               </div>
 
-                              {/* Action Buttons - Large & Touch-Friendly */}
+                              {/* Action Buttons - Compact */}
                               <div className="grid grid-cols-2 gap-2">
                                 <Button
                                   onClick={() => markAsFinished(item)}
-                                  className="h-11 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl"
+                                  size="sm"
+                                  className="h-9 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg"
                                 >
-                                  <AlertTriangle className="w-4 h-4 ml-2" />
+                                  <AlertTriangle className="w-3.5 h-3.5 ml-1" />
                                   נגמר
                                 </Button>
                                 <Button
                                   onClick={() => addToShoppingList(item)}
                                   variant="outline"
-                                  className="h-11 border-2 border-blue-300 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold"
+                                  size="sm"
+                                  className="h-9 border-blue-300 text-blue-600 hover:bg-blue-50 text-xs rounded-lg"
                                 >
-                                  <ShoppingCart className="w-4 h-4 ml-2" />
+                                  <ShoppingCart className="w-3.5 h-3.5 ml-1" />
                                   לרשימה
                                 </Button>
                               </div>
@@ -754,38 +756,38 @@ export default function Inventory() {
                             <div 
                               key={item.id}
                               className={cn(
-                                "rounded-xl border-2 p-4 transition-all",
+                                "rounded-lg border p-3 transition-all",
                                 item.status === "out_of_stock" ? "border-red-400 bg-red-50" :
                                 item.status === "expired" ? "border-rose-300 bg-rose-50" :
                                 "border-amber-300 bg-amber-50"
                               )}
                             >
                               {/* Header */}
-                              <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-slate-900 text-base mb-1">{item.name}</h4>
-                                  <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-semibold text-slate-900 text-sm mb-1">{item.name}</h4>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-xs text-slate-500 flex items-center gap-1">
                                       <LocationIcon className="w-3 h-3" />
                                       {loc.label}
                                     </span>
                                     {item.status === "out_of_stock" && (
-                                      <Badge className="bg-red-600 text-white text-xs">נגמר</Badge>
+                                      <Badge className="bg-red-600 text-white text-xs h-5">נגמר</Badge>
                                     )}
                                     {item.status === "expired" && (
-                                      <Badge variant="destructive" className="text-xs">פג תוקף</Badge>
+                                      <Badge variant="destructive" className="text-xs h-5">פג תוקף</Badge>
                                     )}
                                     {item.status === "low" && (
-                                      <Badge className="bg-amber-500 text-xs">מלאי נמוך</Badge>
+                                      <Badge className="bg-amber-500 text-xs h-5">נמוך</Badge>
                                     )}
                                     {item.is_staple && (
-                                      <Badge className="bg-amber-500 text-xs">
+                                      <Badge className="bg-amber-500 text-xs h-5">
                                         <Star className="w-3 h-3 ml-1 fill-white" />
                                         חובה
                                       </Badge>
                                     )}
                                     {expiryInfo && (
-                                      <span className={cn("px-2 py-0.5 rounded-full text-xs", expiryInfo.color)}>
+                                      <span className={cn("px-1.5 py-0.5 rounded text-xs", expiryInfo.color)}>
                                         {expiryInfo.text}
                                       </span>
                                     )}
@@ -795,9 +797,9 @@ export default function Inventory() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => openEdit(item)}
-                                  className="text-slate-400 hover:text-slate-600 -mt-1"
+                                  className="text-slate-400 hover:text-slate-600 h-7 w-7"
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
 
@@ -805,32 +807,32 @@ export default function Inventory() {
                               {item.status === "out_of_stock" ? (
                                 <Button
                                   onClick={() => updateQuantity(item, 1)}
-                                  className="w-full h-12 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl mb-3"
+                                  className="w-full h-10 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg mb-2 text-sm"
                                 >
                                   <CheckCircle2 className="w-4 h-4 ml-2" />
                                   חזר מלאי
                                 </Button>
                               ) : (
-                                <div className="flex items-center gap-3 mb-3">
+                                <div className="flex items-center gap-2 mb-2">
                                   <Button
                                     variant="outline"
-                                    size="lg"
-                                    className="h-12 w-12 rounded-xl border-2"
+                                    size="sm"
+                                    className="h-9 w-9 rounded-lg"
                                     onClick={() => updateQuantity(item, -1)}
                                   >
-                                    <Minus className="w-5 h-5" />
+                                    <Minus className="w-4 h-4" />
                                   </Button>
                                   <div className="flex-1 text-center">
-                                    <div className="text-2xl font-bold text-slate-900">{item.quantity}</div>
+                                    <div className="text-xl font-bold text-slate-900">{item.quantity}</div>
                                     <div className="text-xs text-slate-500">{UNITS[item.unit]}</div>
                                   </div>
                                   <Button
                                     variant="outline"
-                                    size="lg"
-                                    className="h-12 w-12 rounded-xl border-2 border-green-300 text-green-600 hover:bg-green-50"
+                                    size="sm"
+                                    className="h-9 w-9 rounded-lg border-green-300 text-green-600 hover:bg-green-50"
                                     onClick={() => updateQuantity(item, 1)}
                                   >
-                                    <Plus className="w-5 h-5" />
+                                    <Plus className="w-4 h-4" />
                                   </Button>
                                 </div>
                               )}
@@ -840,22 +842,24 @@ export default function Inventory() {
                                 {item.status !== "out_of_stock" && (
                                   <Button
                                     onClick={() => markAsFinished(item)}
-                                    className="h-11 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl"
+                                    size="sm"
+                                    className="h-9 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg"
                                   >
-                                    <AlertTriangle className="w-4 h-4 ml-2" />
+                                    <AlertTriangle className="w-3.5 h-3.5 ml-1" />
                                     נגמר
                                   </Button>
                                 )}
                                 <Button
                                   onClick={() => addToShoppingList(item)}
                                   variant="outline"
+                                  size="sm"
                                   className={cn(
-                                    "h-11 border-2 border-blue-300 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold",
-                                    item.status === "out_of_stock" && "col-span-2"
+                                    "h-9 border-blue-300 text-blue-600 hover:bg-blue-50 text-xs rounded-lg",
+                                    item.status === "out_of_stock" && "col-span-1"
                                   )}
                                 >
-                                  <ShoppingCart className="w-4 h-4 ml-2" />
-                                  הוסף לרשימת קניות
+                                  <ShoppingCart className="w-3.5 h-3.5 ml-1" />
+                                  לרשימה
                                 </Button>
                               </div>
                             </div>

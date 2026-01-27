@@ -608,15 +608,15 @@ export default function Inventory() {
                   if (categoryItems.length === 0) return null;
                   
                   return (
-                    <div key={catKey} className="space-y-2">
-                      <div className="flex items-center gap-2 px-2">
-                        <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0", catData.color)}>
-                          <Package className="w-3 h-3" />
+                    <div key={catKey} className="space-y-1.5">
+                      <div className="flex items-center gap-2 px-1">
+                        <div className={cn("w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0", catData.color)}>
+                          <Package className="w-2.5 h-2.5" />
                         </div>
-                        <span className="font-semibold text-slate-700 text-sm">{catData.label}</span>
-                        <Badge variant="outline" className="text-xs">{categoryItems.length}</Badge>
+                        <span className="font-semibold text-slate-700 text-xs">{catData.label}</span>
+                        <Badge variant="outline" className="text-xs h-4 px-1">{categoryItems.length}</Badge>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {categoryItems.map(item => {
                           const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
                           const LocationIcon = loc.icon;
@@ -626,35 +626,35 @@ export default function Inventory() {
                             <div 
                               key={item.id}
                               className={cn(
-                                "rounded-lg border p-3 transition-all",
+                                "rounded-md border p-2 transition-all",
                                 item.status === "expired" ? "border-rose-300 bg-rose-50" :
                                 item.status === "low" ? "border-amber-300 bg-amber-50" :
                                 "bg-white border-slate-200"
                               )}
                             >
                               {/* Header */}
-                              <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-start justify-between mb-1.5">
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-slate-900 text-sm mb-1">{item.name}</h4>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                                      <LocationIcon className="w-3 h-3" />
-                                      {loc.label}
+                                  <h4 className="font-semibold text-slate-900 text-xs mb-0.5">{item.name}</h4>
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <span className="text-xs text-slate-500 flex items-center gap-0.5">
+                                      <LocationIcon className="w-2.5 h-2.5" />
+                                      <span className="text-[10px]">{loc.label}</span>
                                     </span>
                                     {item.status === "expired" && (
-                                      <Badge variant="destructive" className="text-xs h-5">פג תוקף</Badge>
+                                      <Badge variant="destructive" className="text-[10px] h-4 px-1">פג תוקף</Badge>
                                     )}
                                     {item.status === "low" && (
-                                      <Badge className="bg-amber-500 text-xs h-5">נמוך</Badge>
+                                      <Badge className="bg-amber-500 text-[10px] h-4 px-1">נמוך</Badge>
                                     )}
                                     {item.is_staple && (
-                                      <Badge className="bg-amber-500 text-xs h-5">
-                                        <Star className="w-3 h-3 ml-1 fill-white" />
+                                      <Badge className="bg-amber-500 text-[10px] h-4 px-1 gap-0.5">
+                                        <Star className="w-2 h-2 fill-white" />
                                         חובה
                                       </Badge>
                                     )}
                                     {expiryInfo && (
-                                      <span className={cn("px-1.5 py-0.5 rounded text-xs", expiryInfo.color)}>
+                                      <span className={cn("px-1 py-0.5 rounded text-[10px]", expiryInfo.color)}>
                                         {expiryInfo.text}
                                       </span>
                                     )}
@@ -664,53 +664,53 @@ export default function Inventory() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => openEdit(item)}
-                                  className="text-slate-400 hover:text-slate-600 h-7 w-7"
+                                  className="text-slate-400 hover:text-slate-600 h-6 w-6"
                                 >
-                                  <Edit className="w-3.5 h-3.5" />
+                                  <Edit className="w-3 h-3" />
                                 </Button>
                               </div>
 
                               {/* Quantity Controls - Compact */}
-                              <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-1.5 mb-1.5">
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-9 w-9 rounded-lg"
+                                  className="h-7 w-7 rounded-md p-0"
                                   onClick={() => updateQuantity(item, -1)}
                                 >
-                                  <Minus className="w-4 h-4" />
+                                  <Minus className="w-3 h-3" />
                                 </Button>
                                 <div className="flex-1 text-center">
-                                  <div className="text-xl font-bold text-slate-900">{item.quantity}</div>
-                                  <div className="text-xs text-slate-500">{UNITS[item.unit]}</div>
+                                  <div className="text-base font-bold text-slate-900 leading-none">{item.quantity}</div>
+                                  <div className="text-[10px] text-slate-500">{UNITS[item.unit]}</div>
                                 </div>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-9 w-9 rounded-lg border-green-300 text-green-600 hover:bg-green-50"
+                                  className="h-7 w-7 rounded-md p-0 border-green-300 text-green-600 hover:bg-green-50"
                                   onClick={() => updateQuantity(item, 1)}
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Plus className="w-3 h-3" />
                                 </Button>
                               </div>
 
                               {/* Action Buttons - Compact */}
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-2 gap-1.5">
                                 <Button
                                   onClick={() => markAsFinished(item)}
                                   size="sm"
-                                  className="h-9 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg"
+                                  className="h-7 bg-red-500 hover:bg-red-600 text-white text-[10px] rounded-md p-0"
                                 >
-                                  <AlertTriangle className="w-3.5 h-3.5 ml-1" />
+                                  <AlertTriangle className="w-3 h-3 ml-0.5" />
                                   נגמר
                                 </Button>
                                 <Button
                                   onClick={() => addToShoppingList(item)}
                                   variant="outline"
                                   size="sm"
-                                  className="h-9 border-blue-300 text-blue-600 hover:bg-blue-50 text-xs rounded-lg"
+                                  className="h-7 border-blue-300 text-blue-600 hover:bg-blue-50 text-[10px] rounded-md p-0"
                                 >
-                                  <ShoppingCart className="w-3.5 h-3.5 ml-1" />
+                                  <ShoppingCart className="w-3 h-3 ml-0.5" />
                                   לרשימה
                                 </Button>
                               </div>
@@ -738,15 +738,15 @@ export default function Inventory() {
                   if (categoryItems.length === 0) return null;
                   
                   return (
-                    <div key={catKey} className="space-y-2">
-                      <div className="flex items-center gap-2 px-2">
-                        <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0", catData.color)}>
-                          <Package className="w-3 h-3" />
+                    <div key={catKey} className="space-y-1.5">
+                      <div className="flex items-center gap-2 px-1">
+                        <div className={cn("w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0", catData.color)}>
+                          <Package className="w-2.5 h-2.5" />
                         </div>
-                        <span className="font-semibold text-red-900 text-sm">{catData.label}</span>
-                        <Badge className="bg-red-600 text-xs">{categoryItems.length}</Badge>
+                        <span className="font-semibold text-red-900 text-xs">{catData.label}</span>
+                        <Badge className="bg-red-600 text-[10px] h-4 px-1">{categoryItems.length}</Badge>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {categoryItems.map(item => {
                           const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
                           const LocationIcon = loc.icon;
@@ -756,38 +756,38 @@ export default function Inventory() {
                             <div 
                               key={item.id}
                               className={cn(
-                                "rounded-lg border p-3 transition-all",
+                                "rounded-md border p-2 transition-all",
                                 item.status === "out_of_stock" ? "border-red-400 bg-red-50" :
                                 item.status === "expired" ? "border-rose-300 bg-rose-50" :
                                 "border-amber-300 bg-amber-50"
                               )}
                             >
                               {/* Header */}
-                              <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-start justify-between mb-1.5">
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-slate-900 text-sm mb-1">{item.name}</h4>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                                      <LocationIcon className="w-3 h-3" />
-                                      {loc.label}
+                                  <h4 className="font-semibold text-slate-900 text-xs mb-0.5">{item.name}</h4>
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <span className="text-xs text-slate-500 flex items-center gap-0.5">
+                                      <LocationIcon className="w-2.5 h-2.5" />
+                                      <span className="text-[10px]">{loc.label}</span>
                                     </span>
                                     {item.status === "out_of_stock" && (
-                                      <Badge className="bg-red-600 text-white text-xs h-5">נגמר</Badge>
+                                      <Badge className="bg-red-600 text-white text-[10px] h-4 px-1">נגמר</Badge>
                                     )}
                                     {item.status === "expired" && (
-                                      <Badge variant="destructive" className="text-xs h-5">פג תוקף</Badge>
+                                      <Badge variant="destructive" className="text-[10px] h-4 px-1">פג תוקף</Badge>
                                     )}
                                     {item.status === "low" && (
-                                      <Badge className="bg-amber-500 text-xs h-5">נמוך</Badge>
+                                      <Badge className="bg-amber-500 text-[10px] h-4 px-1">נמוך</Badge>
                                     )}
                                     {item.is_staple && (
-                                      <Badge className="bg-amber-500 text-xs h-5">
-                                        <Star className="w-3 h-3 ml-1 fill-white" />
+                                      <Badge className="bg-amber-500 text-[10px] h-4 px-1 gap-0.5">
+                                        <Star className="w-2 h-2 fill-white" />
                                         חובה
                                       </Badge>
                                     )}
                                     {expiryInfo && (
-                                      <span className={cn("px-1.5 py-0.5 rounded text-xs", expiryInfo.color)}>
+                                      <span className={cn("px-1 py-0.5 rounded text-[10px]", expiryInfo.color)}>
                                         {expiryInfo.text}
                                       </span>
                                     )}
@@ -797,9 +797,9 @@ export default function Inventory() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => openEdit(item)}
-                                  className="text-slate-400 hover:text-slate-600 h-7 w-7"
+                                  className="text-slate-400 hover:text-slate-600 h-6 w-6"
                                 >
-                                  <Edit className="w-3.5 h-3.5" />
+                                  <Edit className="w-3 h-3" />
                                 </Button>
                               </div>
 
@@ -807,45 +807,45 @@ export default function Inventory() {
                               {item.status === "out_of_stock" ? (
                                 <Button
                                   onClick={() => updateQuantity(item, 1)}
-                                  className="w-full h-10 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg mb-2 text-sm"
+                                  className="w-full h-8 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md mb-1.5 text-xs"
                                 >
-                                  <CheckCircle2 className="w-4 h-4 ml-2" />
+                                  <CheckCircle2 className="w-3.5 h-3.5 ml-1" />
                                   חזר מלאי
                                 </Button>
                               ) : (
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-1.5 mb-1.5">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-9 w-9 rounded-lg"
+                                    className="h-7 w-7 rounded-md p-0"
                                     onClick={() => updateQuantity(item, -1)}
                                   >
-                                    <Minus className="w-4 h-4" />
+                                    <Minus className="w-3 h-3" />
                                   </Button>
                                   <div className="flex-1 text-center">
-                                    <div className="text-xl font-bold text-slate-900">{item.quantity}</div>
-                                    <div className="text-xs text-slate-500">{UNITS[item.unit]}</div>
+                                    <div className="text-base font-bold text-slate-900 leading-none">{item.quantity}</div>
+                                    <div className="text-[10px] text-slate-500">{UNITS[item.unit]}</div>
                                   </div>
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-9 w-9 rounded-lg border-green-300 text-green-600 hover:bg-green-50"
+                                    className="h-7 w-7 rounded-md p-0 border-green-300 text-green-600 hover:bg-green-50"
                                     onClick={() => updateQuantity(item, 1)}
                                   >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-3 h-3" />
                                   </Button>
                                 </div>
                               )}
 
                               {/* Action Buttons */}
-                              <div className={cn("grid gap-2", item.status === "out_of_stock" ? "grid-cols-1" : "grid-cols-2")}>
+                              <div className={cn("grid gap-1.5", item.status === "out_of_stock" ? "grid-cols-1" : "grid-cols-2")}>
                                 {item.status !== "out_of_stock" && (
                                   <Button
                                     onClick={() => markAsFinished(item)}
                                     size="sm"
-                                    className="h-9 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg"
+                                    className="h-7 bg-red-500 hover:bg-red-600 text-white text-[10px] rounded-md p-0"
                                   >
-                                    <AlertTriangle className="w-3.5 h-3.5 ml-1" />
+                                    <AlertTriangle className="w-3 h-3 ml-0.5" />
                                     נגמר
                                   </Button>
                                 )}
@@ -854,11 +854,11 @@ export default function Inventory() {
                                   variant="outline"
                                   size="sm"
                                   className={cn(
-                                    "h-9 border-blue-300 text-blue-600 hover:bg-blue-50 text-xs rounded-lg",
+                                    "h-7 border-blue-300 text-blue-600 hover:bg-blue-50 text-[10px] rounded-md p-0",
                                     item.status === "out_of_stock" && "col-span-1"
                                   )}
                                 >
-                                  <ShoppingCart className="w-3.5 h-3.5 ml-1" />
+                                  <ShoppingCart className="w-3 h-3 ml-0.5" />
                                   לרשימה
                                 </Button>
                               </div>

@@ -694,6 +694,15 @@ export default function Inventory() {
                                 </Button>
                               </div>
 
+                              {/* Quick Restock Button */}
+                              <Button
+                                onClick={() => updateQuantity(item, 5)}
+                                className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl mb-2 shadow-md"
+                              >
+                                <CheckCircle2 className="w-4 h-4 ml-2" />
+                                חזר מלאי (+5)
+                              </Button>
+
                               {/* Action Buttons - Large & Touch-Friendly */}
                               <div className="grid grid-cols-2 gap-2">
                                 <Button
@@ -801,16 +810,17 @@ export default function Inventory() {
                                 </Button>
                               </div>
 
-                              {/* Quantity Controls or Restock Button */}
-                              {item.status === "out_of_stock" ? (
-                                <Button
-                                  onClick={() => updateQuantity(item, 1)}
-                                  className="w-full h-14 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl mb-3 text-base"
-                                >
-                                  <CheckCircle2 className="w-5 h-5 ml-2" />
-                                  יש מלאי - עדכן
-                                </Button>
-                              ) : (
+                              {/* Restock Button - Always Available */}
+                              <Button
+                                onClick={() => updateQuantity(item, 5)}
+                                className="w-full h-14 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl mb-3 text-base shadow-lg"
+                              >
+                                <CheckCircle2 className="w-5 h-5 ml-2" />
+                                חזר מלאי (+5)
+                              </Button>
+
+                              {/* Quantity Controls */}
+                              {item.status !== "out_of_stock" && (
                                 <div className="flex items-center gap-3 mb-3">
                                   <Button
                                     variant="outline"

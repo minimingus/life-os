@@ -198,13 +198,13 @@ export default function Tasks() {
       }
     }
     
-    updateMutation.mutate({
+    await updateMutation.mutateAsync({
       id: taskToComplete.id,
       data: { 
         ...taskToComplete, 
         status: "completed", 
         completed_at,
-        completion_note: completionNote || null
+        completion_note: completionNote.trim() || null
       }
     });
     

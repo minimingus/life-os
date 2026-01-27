@@ -41,7 +41,10 @@ import {
   Star,
   FileUp,
   Loader2,
-  Tag
+  Tag,
+  Sparkles,
+  Clock,
+  Edit2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, isBefore } from "date-fns";
@@ -50,15 +53,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import NotificationSettingsPanel from "@/components/NotificationSettingsPanel";
 
 const CATEGORIES = {
-  fruits: { label: "פירות", color: "bg-red-100 text-red-600" },
-  vegetables: { label: "ירקות", color: "bg-green-100 text-green-600" },
-  dairy: { label: "מוצרי חלב", color: "bg-blue-100 text-blue-600" },
-  meat: { label: "בשר ודגים", color: "bg-rose-100 text-rose-600" },
-  bread: { label: "לחם ומאפים", color: "bg-amber-100 text-amber-600" },
-  frozen: { label: "קפואים", color: "bg-cyan-100 text-cyan-600" },
-  pantry: { label: "מזווה", color: "bg-orange-100 text-orange-600" },
-  cleaning: { label: "ניקיון", color: "bg-purple-100 text-purple-600" },
-  other: { label: "אחר", color: "bg-slate-100 text-slate-600" }
+  fruits: { label: "פירות", color: "bg-red-100 text-red-600", icon: Package },
+  vegetables: { label: "ירקות", color: "bg-green-100 text-green-600", icon: Package },
+  dairy: { label: "מוצרי חלב", color: "bg-blue-100 text-blue-600", icon: Package },
+  meat: { label: "בשר ודגים", color: "bg-rose-100 text-rose-600", icon: Package },
+  bread: { label: "לחם ומאפים", color: "bg-amber-100 text-amber-600", icon: Package },
+  frozen: { label: "קפואים", color: "bg-cyan-100 text-cyan-600", icon: Snowflake },
+  pantry: { label: "מזווה", color: "bg-orange-100 text-orange-600", icon: Archive },
+  cleaning: { label: "ניקיון", color: "bg-purple-100 text-purple-600", icon: Sparkles },
+  other: { label: "אחר", color: "bg-slate-100 text-slate-600", icon: Package }
 };
 
 const LOCATIONS = {
@@ -438,6 +441,13 @@ export default function Inventory() {
   const stapleCount = items.filter(i => i.is_staple).length;
   const lowStapleCount = items.filter(i => i.is_staple && (i.status === "low" || i.status === "out_of_stock")).length;
 
+  const isExpiringSoon = (item) => {
+    if (!item.expiry_date) return false;
+    const days = differenceInDays(parseISO(item.expiry_date), new Date());
+    const threshold = notificationSettings?.expiry_alert_days || 3;
+    return days >= 0 && days <= threshold;
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -622,53 +632,55 @@ export default function Inventory() {
                           const LocationIcon = loc.icon;
                           const expiryInfo = getExpiryInfo(item.expiry_date);
 
-                          return (
-                            <div 
-                              key={item.id}
-                              className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-0"
-                              onClick={() => openEdit(item)}
-                            >
-                              {/* Details */}
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-slate-900 text-sm">{item.name}</h4>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  <span className="text-xs text-slate-500">
-                                    {item.quantity} {UNITS[item.unit]} • {loc.label}
-                                  </span>
-                                  {item.is_staple && (
-                                    <>
-                                      <span className="text-slate-300">•</span>
-                                      <span className="text-xs text-amber-600 font-medium">בסיסי</span>
-                                    </>
-                                  )}
-                                  {expiryInfo && (
-                                    <>
-                                      <span className="text-slate-300">•</span>
-                                      <span className={cn("text-xs font-medium", expiryInfo.color.replace("bg-", "").split(" ")[0])}>
-                                        {expiryInfo.text}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
+                          const cat = CATEGORIES[item.category] || CATEGORIES.other;
+                          const CategoryIcon = cat.icon || Package;
 
-                                {/* Status Badges */}
-                                {(item.status === "expired" || item.status === "low") && (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {item.status === "expired" && (
-                                      <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                        <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                        פג תוקף
-                                      </Badge>
-                                    )}
-                                    {item.status === "low" && (
-                                      <Badge className="bg-orange-100 text-orange-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                        <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                        מלאי נמוך
-                                      </Badge>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                          return (
+                           <div 
+                             key={item.id}
+                             className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-0"
+                             onClick={() => openEdit(item)}
+                           >
+                             {/* Category Icon */}
+                             <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0", cat.color)}>
+                               <CategoryIcon className="w-4 h-4" />
+                             </div>
+
+                             {/* Details */}
+                             <div className="flex-1 min-w-0">
+                               <h4 className="font-semibold text-slate-900 text-sm">{item.name}</h4>
+                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                 <span className="text-xs text-slate-500">
+                                   {item.quantity} {UNITS[item.unit]} • {loc.label}
+                                 </span>
+                                 {item.is_staple && (
+                                   <>
+                                     <span className="text-slate-300">•</span>
+                                     <span className="text-xs text-amber-600 font-medium">בסיסי</span>
+                                   </>
+                                 )}
+                                 {expiryInfo && (
+                                   <>
+                                     <span className="text-slate-300">•</span>
+                                     <span className={cn("text-xs font-medium", expiryInfo.color.replace("bg-", "").split(" ")[0])}>
+                                       {expiryInfo.text}
+                                     </span>
+                                   </>
+                                 )}
+                                 {item.status === "expired" && (
+                                   <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
+                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
+                                     פג תוקף
+                                   </Badge>
+                                 )}
+                                 {item.status === "low" && (
+                                   <Badge className="bg-orange-100 text-orange-600 border-0 text-[10px] px-1.5 py-0 h-4">
+                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
+                                     מלאי נמוך
+                                   </Badge>
+                                 )}
+                               </div>
+                             </div>
 
                               {/* Compact Actions */}
                               <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -758,54 +770,58 @@ export default function Inventory() {
                           const LocationIcon = loc.icon;
                           const expiryInfo = getExpiryInfo(item.expiry_date);
 
-                          return (
-                            <div 
-                              key={item.id}
-                              className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-0"
-                              onClick={() => openEdit(item)}
-                            >
-                              {/* Details */}
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-slate-900 text-sm">{item.name}</h4>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  <span className="text-xs text-slate-500">
-                                    {loc.label}
-                                  </span>
-                                  {item.is_staple && (
-                                    <>
-                                      <span className="text-slate-300">•</span>
-                                      <span className="text-xs text-amber-600 font-medium">בסיסי</span>
-                                    </>
-                                  )}
-                                </div>
+                          const cat = CATEGORIES[item.category] || CATEGORIES.other;
+                          const CategoryIcon = cat.icon || Package;
 
-                                {/* Status Badges */}
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {item.status === "out_of_stock" && (
-                                    <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                      <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                      נגמר במלאי
-                                    </Badge>
-                                  )}
-                                  {item.status === "expired" && (
-                                    <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                      <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                      פג תוקף
-                                    </Badge>
-                                  )}
-                                  {item.status === "low" && (
-                                    <Badge className="bg-orange-100 text-orange-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                      <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                      מלאי נמוך
-                                    </Badge>
-                                  )}
-                                  {expiryInfo && (
-                                    <span className={cn("text-xs", expiryInfo.color.replace("bg-", "").split(" ")[0])}>
-                                      {expiryInfo.text}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                          return (
+                           <div 
+                             key={item.id}
+                             className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-0"
+                             onClick={() => openEdit(item)}
+                           >
+                             {/* Category Icon */}
+                             <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0", cat.color)}>
+                               <CategoryIcon className="w-4 h-4" />
+                             </div>
+
+                             {/* Details */}
+                             <div className="flex-1 min-w-0">
+                               <h4 className="font-semibold text-slate-900 text-sm">{item.name}</h4>
+                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                 <span className="text-xs text-slate-500">
+                                   {loc.label}
+                                 </span>
+                                 {item.is_staple && (
+                                   <>
+                                     <span className="text-slate-300">•</span>
+                                     <span className="text-xs text-amber-600 font-medium">בסיסי</span>
+                                   </>
+                                 )}
+                                 {item.status === "out_of_stock" && (
+                                   <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
+                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
+                                     נגמר במלאי
+                                   </Badge>
+                                 )}
+                                 {item.status === "expired" && (
+                                   <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
+                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
+                                     פג תוקף
+                                   </Badge>
+                                 )}
+                                 {item.status === "low" && (
+                                   <Badge className="bg-orange-100 text-orange-600 border-0 text-[10px] px-1.5 py-0 h-4">
+                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
+                                     מלאי נמוך
+                                   </Badge>
+                                 )}
+                                 {expiryInfo && (
+                                   <span className={cn("text-xs", expiryInfo.color.replace("bg-", "").split(" ")[0])}>
+                                     {expiryInfo.text}
+                                   </span>
+                                 )}
+                               </div>
+                             </div>
 
                               {/* Compact Actions */}
                               <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>

@@ -657,16 +657,34 @@ export default function Tasks() {
             </div>
 
             <div className="border-t pt-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Checkbox
-                  id="recurring"
-                  checked={formData.is_recurring}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_recurring: checked })}
-                />
-                <label htmlFor="recurring" className="text-sm font-medium flex items-center gap-2">
-                  <Repeat className="w-4 h-4" />
-                  משימה חוזרת
-                </label>
+              <label className="text-xs text-slate-600 mb-2 block">סוג משימה</label>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, is_recurring: false })}
+                  className={cn(
+                    "py-3 px-4 rounded-lg border-2 transition-all text-sm font-medium",
+                    !formData.is_recurring
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  )}
+                >
+                  <Circle className="w-4 h-4 mx-auto mb-1" />
+                  חד פעמית
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, is_recurring: true })}
+                  className={cn(
+                    "py-3 px-4 rounded-lg border-2 transition-all text-sm font-medium",
+                    formData.is_recurring
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  )}
+                >
+                  <Repeat className="w-4 h-4 mx-auto mb-1" />
+                  חוזרת
+                </button>
               </div>
 
               {formData.is_recurring && (

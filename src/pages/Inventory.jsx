@@ -696,11 +696,11 @@ export default function Inventory() {
 
                               {/* Quick Restock Button */}
                               <Button
-                                onClick={() => updateQuantity(item, 5)}
+                                onClick={() => updateQuantity(item, 1)}
                                 className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl mb-2 shadow-md"
                               >
                                 <CheckCircle2 className="w-4 h-4 ml-2" />
-                                חזר מלאי (+5)
+                                חזר מלאי
                               </Button>
 
                               {/* Action Buttons - Large & Touch-Friendly */}
@@ -812,11 +812,11 @@ export default function Inventory() {
 
                               {/* Restock Button - Always Available */}
                               <Button
-                                onClick={() => updateQuantity(item, 5)}
+                                onClick={() => updateQuantity(item, 1)}
                                 className="w-full h-14 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl mb-3 text-base shadow-lg"
                               >
                                 <CheckCircle2 className="w-5 h-5 ml-2" />
-                                חזר מלאי (+5)
+                                חזר מלאי
                               </Button>
 
                               {/* Quantity Controls */}

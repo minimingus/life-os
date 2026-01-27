@@ -694,15 +694,6 @@ export default function Inventory() {
                                 </Button>
                               </div>
 
-                              {/* Quick Restock Button */}
-                              <Button
-                                onClick={() => updateQuantity(item, 1)}
-                                className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl mb-2 shadow-md"
-                              >
-                                <CheckCircle2 className="w-4 h-4 ml-2" />
-                                חזר מלאי
-                              </Button>
-
                               {/* Action Buttons - Large & Touch-Friendly */}
                               <div className="grid grid-cols-2 gap-2">
                                 <Button
@@ -810,17 +801,16 @@ export default function Inventory() {
                                 </Button>
                               </div>
 
-                              {/* Restock Button - Always Available */}
-                              <Button
-                                onClick={() => updateQuantity(item, 1)}
-                                className="w-full h-14 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl mb-3 text-base shadow-lg"
-                              >
-                                <CheckCircle2 className="w-5 h-5 ml-2" />
-                                חזר מלאי
-                              </Button>
-
-                              {/* Quantity Controls */}
-                              {item.status !== "out_of_stock" && (
+                              {/* Restock Button for Out of Stock */}
+                              {item.status === "out_of_stock" ? (
+                                <Button
+                                  onClick={() => updateQuantity(item, 1)}
+                                  className="w-full h-12 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl mb-3"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 ml-2" />
+                                  חזר מלאי
+                                </Button>
+                              ) : (
                                 <div className="flex items-center gap-3 mb-3">
                                   <Button
                                     variant="outline"
@@ -846,7 +836,7 @@ export default function Inventory() {
                               )}
 
                               {/* Action Buttons */}
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className={cn("grid gap-2", item.status === "out_of_stock" ? "grid-cols-1" : "grid-cols-2")}>
                                 {item.status !== "out_of_stock" && (
                                   <Button
                                     onClick={() => markAsFinished(item)}

@@ -784,12 +784,14 @@ export default function Tasks() {
 
             <div className="flex gap-3">
               <Button 
+                type="button"
                 onClick={completeTask}
                 className="flex-1 bg-green-500 hover:bg-green-600"
               >
                 ✓ סמן כהושלם
               </Button>
               <Button 
+                type="button"
                 variant="outline" 
                 onClick={() => {
                   setShowCompleteDialog(false);

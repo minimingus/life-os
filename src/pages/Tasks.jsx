@@ -180,37 +180,42 @@ export default function Tasks() {
   const completeTask = async () => {
     if (!taskToComplete) return;
     
-    const completed_at = new Date().toISOString();
-    
-    // If recurring, create next occurrence
-    if (taskToComplete.is_recurring && taskToComplete.recurrence_pattern) {
-      const nextDate = calculateNextOccurrence(taskToComplete);
-      if (nextDate) {
-        await createMutation.mutateAsync({
-          ...taskToComplete,
-          id: undefined,
-          due_date: format(nextDate, "yyyy-MM-dd"),
-          status: "pending",
-          completed_at: null,
-          completion_note: null,
-          parent_task_id: taskToComplete.parent_task_id || taskToComplete.id
-        });
+    try {
+      const completed_at = new Date().toISOString();
+      
+      // If recurring, create next occurrence
+      if (taskToComplete.is_recurring && taskToComplete.recurrence_pattern) {
+        const nextDate = calculateNextOccurrence(taskToComplete);
+        if (nextDate) {
+          await createMutation.mutateAsync({
+            ...taskToComplete,
+            id: undefined,
+            due_date: format(nextDate, "yyyy-MM-dd"),
+            status: "pending",
+            completed_at: null,
+            completion_note: null,
+            parent_task_id: taskToComplete.parent_task_id || taskToComplete.id
+          });
+        }
       }
+      
+      // Update task to completed
+      await updateMutation.mutateAsync({
+        id: taskToComplete.id,
+        data: { 
+          status: "completed", 
+          completed_at,
+          completion_note: completionNote.trim() || null
+        }
+      });
+      
+      setShowCompleteDialog(false);
+      setTaskToComplete(null);
+      setCompletionNote("");
+    } catch (error) {
+      console.error("Error completing task:", error);
+      alert("שגיאה בהשלמת המשימה");
     }
-    
-    await updateMutation.mutateAsync({
-      id: taskToComplete.id,
-      data: { 
-        ...taskToComplete, 
-        status: "completed", 
-        completed_at,
-        completion_note: completionNote.trim() || null
-      }
-    });
-    
-    setShowCompleteDialog(false);
-    setTaskToComplete(null);
-    setCompletionNote("");
   };
 
   const calculateNextOccurrence = (task) => {

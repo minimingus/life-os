@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import OfflineIndicator from "./components/OfflineIndicator";
 import { 
               Home, 
               ShoppingCart, 
@@ -142,9 +141,6 @@ export default function Layout({ children, currentPageName }) {
           {children}
         </div>
       </main>
-
-      {/* Offline Indicator */}
-      <OfflineIndicator />
     </div>
   );
 }

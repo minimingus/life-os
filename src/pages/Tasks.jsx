@@ -147,7 +147,10 @@ export default function Tasks() {
     if (editItem) {
       updateMutation.mutate({ id: editItem.id, data: formData });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate({
+        ...formData,
+        _idempotency_key: `task_form_${Date.now()}_${Math.random()}`
+      });
     }
     resetForm();
   };
@@ -159,7 +162,8 @@ export default function Tasks() {
     createMutation.mutate({
       title: quickAddValue,
       status: "pending",
-      priority: 4
+      priority: 4,
+      _idempotency_key: `task_quick_${Date.now()}_${Math.random()}`
     });
   };
 
@@ -194,7 +198,8 @@ export default function Tasks() {
             status: "pending",
             completed_at: null,
             completion_note: null,
-            parent_task_id: taskToComplete.parent_task_id || taskToComplete.id
+            parent_task_id: taskToComplete.parent_task_id || taskToComplete.id,
+            _idempotency_key: `task_recurring_${taskToComplete.id}_${format(nextDate, "yyyy-MM-dd")}`
           });
         }
       }

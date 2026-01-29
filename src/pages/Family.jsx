@@ -120,7 +120,10 @@ export default function Family() {
     if (editItem) {
       updateMutation.mutate({ id: editItem.id, data: formData });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate({
+        ...formData,
+        _idempotency_key: `family_member_${Date.now()}_${Math.random()}`
+      });
     }
   };
 

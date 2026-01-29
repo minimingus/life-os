@@ -161,7 +161,10 @@ export default function Repairs() {
     if (editItem) {
       updateMutation.mutate({ id: editItem.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({
+        ...data,
+        _idempotency_key: `repair_${Date.now()}_${Math.random()}`
+      });
     }
   };
 

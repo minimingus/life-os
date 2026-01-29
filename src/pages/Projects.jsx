@@ -155,7 +155,10 @@ export default function Projects() {
     if (editItem) {
       updateMutation.mutate({ id: editItem.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({
+        ...data,
+        _idempotency_key: `project_${Date.now()}_${Math.random()}`
+      });
     }
   };
 

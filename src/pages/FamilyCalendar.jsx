@@ -145,7 +145,10 @@ export default function FamilyCalendar() {
     if (editEvent) {
       updateMutation.mutate({ id: editEvent.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({
+        ...data,
+        _idempotency_key: `calendar_event_${Date.now()}_${Math.random()}`
+      });
     }
   };
 

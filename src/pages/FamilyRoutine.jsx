@@ -120,7 +120,10 @@ export default function FamilyRoutine() {
     if (editItem) {
       updateMutation.mutate({ id: editItem.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({
+        ...data,
+        _idempotency_key: `routine_task_${Date.now()}_${Math.random()}`
+      });
     }
   };
 

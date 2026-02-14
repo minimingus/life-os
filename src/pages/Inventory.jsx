@@ -658,24 +658,13 @@ export default function Inventory() {
               </div>
             )}
           </TabsContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="available">
-              זמין ({availableItems.length})
-            </TabsTrigger>
-            <TabsTrigger value="missing">
-              חוסרים ({missingItems.length})
-            </TabsTrigger>
-            <TabsTrigger value="analytics">
-              ניתוח
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="available" className="mt-6">
-            {availableItems.length === 0 ? (
+
+          <TabsContent value="missing" className="mt-6">
+            {missingItems.length === 0 ? (
               <EmptyState
                 icon={Package}
-                title="אין פריטים זמינים"
-                description="כל הפריטים נגמרו או במלאי נמוך"
+                title="אין חוסרים"
+                description="כל הפריטים זמינים"
               />
             ) : (
               <div className={cn(
@@ -683,7 +672,7 @@ export default function Inventory() {
                   ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
                   : "space-y-3"
               )}>
-                {availableItems.map(item => {
+                {missingItems.map(item => {
                   const cat = CATEGORIES[item.category] || CATEGORIES.other;
                   const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
                   

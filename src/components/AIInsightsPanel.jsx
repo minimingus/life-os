@@ -68,22 +68,31 @@ export default function AIInsightsPanel({ compact = false }) {
   });
 
   const handleAction = async (insight, action) => {
-    if (action.action === "add_to_shopping") {
-      await base44.entities.ShoppingItem.create({
-        name: action.data.item_name,
-        notes: action.data.reason,
-        priority: "medium"
-      });
-      queryClient.invalidateQueries({ queryKey: ["shopping"] });
-    } else if (action.action === "mark_bill_paid") {
-      await base44.entities.Bill.update(action.data.bill_id, { 
-        is_paid: true,
-        paid_date: new Date().toISOString().split('T')[0]
-      });
-      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    try {
+      if (action.action === "add_to_shopping") {
+        await base44.entities.ShoppingItem.create({
+          name: action.data.item_name,
+          notes: action.data.reason,
+          priority: "medium"
+        });
+        queryClient.invalidateQueries({ queryKey: ["shopping"] });
+      } else if (action.action === "mark_bill_paid") {
+        await base44.entities.Bill.update(action.data.bill_id, { 
+          is_paid: true,
+          paid_date: new Date().toISOString().split('T')[0]
+        });
+        queryClient.invalidateQueries({ queryKey: ["bills"] });
+      } else if (action.action === "view_project") {
+        window.location.href = `/projects`;
+      } else if (action.action === "mark_for_use") {
+        // Could add to a meal plan or recipe list
+        console.log("Mark for use:", action.data.item_name);
+      }
+      
+      dismissMutation.mutate(insight.id);
+    } catch (error) {
+      console.error("Error handling action:", error);
     }
-    
-    dismissMutation.mutate(insight.id);
   };
 
   if (isLoading) {

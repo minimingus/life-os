@@ -186,6 +186,20 @@ export default function AISettings() {
           key: "budget_warnings_enabled",
           label: "אזהרות על פרויקטים שחורגים מהתקציב",
           type: "switch"
+        },
+        {
+          key: "family_budget_tracking_enabled",
+          label: "מעקב תקציב משפחתי חודשי",
+          type: "switch"
+        },
+        {
+          key: "budget_warning_threshold",
+          label: "אחוז תקציב להתראה",
+          type: "number",
+          suffix: "%",
+          min: 50,
+          max: 100,
+          disabled: !formData.budget_warnings_enabled
         }
       ]
     }

@@ -23,6 +23,7 @@ import QuickAction from "@/components/ui/QuickAction";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import AIInsightsPanel from "@/components/AIInsightsPanel";
+import BudgetOverview from "@/components/BudgetOverview";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -139,6 +140,9 @@ export default function Home() {
           </Button>
         </Link>
       </div>
+
+      {/* Budget Overview */}
+      <BudgetOverview compact />
 
       {/* AI Insights */}
       {insights.length > 0 && (

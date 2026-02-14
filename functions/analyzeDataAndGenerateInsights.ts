@@ -19,12 +19,13 @@ Deno.serve(async (req) => {
     };
 
     // Fetch all relevant data
-    const [bills, inventory, shopping, repairs, projects] = await Promise.all([
+    const [bills, inventory, shopping, repairs, projects, budgets] = await Promise.all([
       base44.asServiceRole.entities.Bill.list(),
       base44.asServiceRole.entities.InventoryItem.list(),
       base44.asServiceRole.entities.ShoppingItem.list(),
       base44.asServiceRole.entities.Repair.list(),
-      base44.asServiceRole.entities.Project.list()
+      base44.asServiceRole.entities.Project.list(),
+      base44.asServiceRole.entities.FamilyBudget.list()
     ]);
 
     const insights = [];
@@ -216,17 +217,27 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6. Budget Warnings
+    // 6. Budget Warnings - Projects
     if (settings.budget_warnings_enabled) {
       const activeProjects = projects.filter(p => p.status !== "completed" && p.budget);
       const overBudgetProjects = activeProjects.filter(p => p.spent && p.spent > p.budget);
+      const nearBudgetProjects = activeProjects.filter(p => 
+        p.spent && p.budget && 
+        p.spent <= p.budget && 
+        (p.spent / p.budget) >= 0.9
+      );
 
       if (overBudgetProjects.length > 0) {
         insights.push({
           type: "budget_warning",
-          priority: "high",
+          priority: "urgent",
           title: `${overBudgetProjects.length} פרויקטים חרגו מהתקציב`,
-          description: `פרויקטים אלה חורגים מהתקציב: ${overBudgetProjects.map(p => p.title).join(', ')}`,
+          description: `פרויקטים אלה חורגים מהתקציב: ${overBudgetProjects.map(p => `${p.title} (חריגה: ₪${(p.spent - p.budget).toLocaleString()})`).join(', ')}`,
+          action_items: overBudgetProjects.map(p => ({
+            label: `צפה ב-${p.title}`,
+            action: "view_project",
+            data: { project_id: p.id }
+          })),
           related_data: {
             projects: overBudgetProjects.map(p => ({
               id: p.id,
@@ -238,6 +249,70 @@ Deno.serve(async (req) => {
           },
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         });
+      }
+
+      if (nearBudgetProjects.length > 0) {
+        insights.push({
+          type: "budget_warning",
+          priority: "high",
+          title: `${nearBudgetProjects.length} פרויקטים קרובים לחריגה`,
+          description: `פרויקטים אלה מתקרבים לגבול התקציב (90%+): ${nearBudgetProjects.map(p => p.title).join(', ')}`,
+          related_data: {
+            projects: nearBudgetProjects.map(p => ({
+              id: p.id,
+              title: p.title,
+              budget: p.budget,
+              spent: p.spent,
+              percentage: Math.round((p.spent / p.budget) * 100)
+            }))
+          },
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+      }
+    }
+
+    // 7. Family Budget Tracking
+    if (settings.budget_warnings_enabled) {
+      const currentMonth = today.toISOString().slice(0, 7);
+      const currentBudget = budgets.find(b => b.month === currentMonth);
+
+      if (currentBudget && currentBudget.categories) {
+        const totalBudget = Object.values(currentBudget.categories).reduce((sum, val) => sum + (val || 0), 0);
+        const totalSpent = Object.values(currentBudget.actual_spending || {}).reduce((sum, val) => sum + (val || 0), 0);
+        
+        if (totalBudget > 0) {
+          const percentageUsed = (totalSpent / totalBudget) * 100;
+          
+          if (totalSpent > totalBudget) {
+            insights.push({
+              type: "budget_warning",
+              priority: "urgent",
+              title: `חריגה מהתקציב החודשי`,
+              description: `חרגת מהתקציב החודשי ב-₪${(totalSpent - totalBudget).toLocaleString()}. סה"כ הוצאות: ₪${totalSpent.toLocaleString()} מתוך תקציב של ₪${totalBudget.toLocaleString()}`,
+              related_data: {
+                total_budget: totalBudget,
+                total_spent: totalSpent,
+                overage: totalSpent - totalBudget,
+                percentage: percentageUsed
+              },
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            });
+          } else if (percentageUsed >= 90) {
+            insights.push({
+              type: "budget_warning",
+              priority: "high",
+              title: `התקציב החודשי מתקרב לסיום`,
+              description: `השתמשת ב-${Math.round(percentageUsed)}% מהתקציב החודשי. נותרו ₪${(totalBudget - totalSpent).toLocaleString()}`,
+              related_data: {
+                total_budget: totalBudget,
+                total_spent: totalSpent,
+                remaining: totalBudget - totalSpent,
+                percentage: percentageUsed
+              },
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            });
+          }
+        }
       }
     }
 

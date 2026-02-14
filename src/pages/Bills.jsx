@@ -43,7 +43,9 @@ import {
   Plus,
   Clock,
   Loader2,
-  User
+  User,
+  Mail,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isBefore, addDays } from "date-fns";
@@ -200,6 +202,21 @@ export default function Bills() {
     mutationFn: (id) => base44.entities.Report.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] })
   });
+
+  const [isFetchingBills, setIsFetchingBills] = useState(false);
+
+  const fetchBillsFromGmail = async () => {
+    setIsFetchingBills(true);
+    try {
+      const response = await base44.functions.invoke('fetchBillsFromGmail', {});
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      alert(response.data.message);
+    } catch (error) {
+      alert('שגיאה בשליפת חשבוניות');
+    } finally {
+      setIsFetchingBills(false);
+    }
+  };
 
   const resetForm = () => {
     setShowDialog(false);
@@ -439,7 +456,15 @@ export default function Bills() {
 
         {/* Bills Tab */}
         <TabsContent value="bills" className="space-y-6 mt-6">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={fetchBillsFromGmail}
+              disabled={isFetchingBills}
+            >
+              <Mail className="w-4 h-4 ml-2" />
+              {isFetchingBills ? 'מייבא...' : 'ייבא מהמייל'}
+            </Button>
             <Button onClick={() => setShowDialog(true)} className="bg-blue-500 hover:bg-blue-600">
               <Plus className="w-4 h-4 ml-2" />
               הוסף חשבון

@@ -47,44 +47,46 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AIReports from './pages/AIReports';
 import AISettings from './pages/AISettings';
 import Bills from './pages/Bills';
+import Budget from './pages/Budget';
 import Family from './pages/Family';
 import FamilyCalendar from './pages/FamilyCalendar';
 import FamilyRoutine from './pages/FamilyRoutine';
+import Health from './pages/Health';
 import Home from './pages/Home';
 import Inventory from './pages/Inventory';
+import NotificationSettings from './pages/NotificationSettings';
 import Projects from './pages/Projects';
 import Repairs from './pages/Repairs';
 import SchoolSchedule from './pages/SchoolSchedule';
 import Shopping from './pages/Shopping';
 import Tasks from './pages/Tasks';
 import app from './pages/_app';
-import AIReports from './pages/AIReports';
-import NotificationSettings from './pages/NotificationSettings';
-import Health from './pages/Health';
-import Budget from './pages/Budget';
+import Education from './pages/Education';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AIReports": AIReports,
     "AISettings": AISettings,
     "Bills": Bills,
+    "Budget": Budget,
     "Family": Family,
     "FamilyCalendar": FamilyCalendar,
     "FamilyRoutine": FamilyRoutine,
+    "Health": Health,
     "Home": Home,
     "Inventory": Inventory,
+    "NotificationSettings": NotificationSettings,
     "Projects": Projects,
     "Repairs": Repairs,
     "SchoolSchedule": SchoolSchedule,
     "Shopping": Shopping,
     "Tasks": Tasks,
     "_app": app,
-    "AIReports": AIReports,
-    "NotificationSettings": NotificationSettings,
-    "Health": Health,
-    "Budget": Budget,
+    "Education": Education,
 }
 
 export const pagesConfig = {

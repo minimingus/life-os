@@ -19,7 +19,8 @@ import {
                   Sparkles,
                   Bell,
                   Heart,
-                  Wallet
+                  Wallet,
+                  GraduationCap
                 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -40,6 +41,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
     { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health" },
     { name: "תקציב וכלכלה", href: createPageUrl("Budget"), icon: Wallet, page: "Budget" },
+    { name: "חינוך ולמידה", href: createPageUrl("Education"), icon: GraduationCap, page: "Education" },
     { name: "דוחות AI", href: createPageUrl("AIReports"), icon: Sparkles, page: "AIReports" },
     { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },

@@ -16,7 +16,9 @@ import {
                   Clock,
                   ListTodo,
                   MoreHorizontal,
-                  Sparkles
+                  Sparkles,
+                  Bell,
+                  Heart
                 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -34,6 +36,8 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   const moreItems = [
+    { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
+    { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health" },
     { name: "דוחות AI", href: createPageUrl("AIReports"), icon: Sparkles, page: "AIReports" },
     { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },
@@ -45,13 +49,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "בני המשפחה", href: createPageUrl("Family"), icon: Users, page: "Family" },
   ];
 
-  const moreItemsWithNotifications = [
-    { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
-    { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health" },
-    ...moreItems
-  ];
-
-  const allNavigation = [...bottomTabItems, ...moreItemsWithNotifications];
+  const allNavigation = [...bottomTabItems, ...moreItems];
 
   return (
     <div dir="rtl" className="min-h-screen bg-background dark:bg-slate-900">
@@ -162,7 +160,7 @@ export default function Layout({ children, currentPageName }) {
               <button
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors min-w-[44px] select-none",
-                  moreItems.some(i => i.page === currentPageName)
+                  moreItems.some(i => i.page === currentPageName) || ["NotificationSettings", "Health"].includes(currentPageName)
                     ? "text-blue-600 dark:text-blue-400"
                     : "text-slate-500 dark:text-slate-400"
                 )}

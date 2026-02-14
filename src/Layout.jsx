@@ -15,7 +15,8 @@ import {
                   ChevronLeft,
                   Clock,
                   ListTodo,
-                  MoreHorizontal
+                  MoreHorizontal,
+                  Sparkles
                 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";

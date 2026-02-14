@@ -20,7 +20,8 @@ import {
                   Bell,
                   Heart,
                   Wallet,
-                  GraduationCap
+                  GraduationCap,
+                  Search as SearchIcon
                 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -32,9 +33,9 @@ export default function Layout({ children, currentPageName }) {
 
   const bottomTabItems = [
     { name: "בית", href: createPageUrl("Home"), icon: Home, page: "Home" },
+    { name: "חיפוש", href: createPageUrl("Search"), icon: SearchIcon, page: "Search" },
     { name: "משימות", href: createPageUrl("Tasks"), icon: ListTodo, page: "Tasks" },
     { name: "קניות", href: createPageUrl("Shopping"), icon: ShoppingCart, page: "Shopping" },
-    { name: "מלאי", href: createPageUrl("Inventory"), icon: Package, page: "Inventory" },
   ];
 
   const moreItems = [

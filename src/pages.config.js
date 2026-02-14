@@ -61,6 +61,7 @@ import Shopping from './pages/Shopping';
 import Tasks from './pages/Tasks';
 import app from './pages/_app';
 import AIReports from './pages/AIReports';
+import NotificationSettings from './pages/NotificationSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -79,6 +80,7 @@ export const PAGES = {
     "Tasks": Tasks,
     "_app": app,
     "AIReports": AIReports,
+    "NotificationSettings": NotificationSettings,
 }
 
 export const pagesConfig = {

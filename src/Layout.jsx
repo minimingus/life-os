@@ -34,8 +34,8 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   const moreItems = [
-    { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings" },
     { name: "דוחות AI", href: createPageUrl("AIReports"), icon: Sparkles, page: "AIReports" },
+    { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },
     { name: "אחזקת בית", href: createPageUrl("Repairs"), icon: Wrench, page: "Repairs" },
     { name: "פרויקטים", href: createPageUrl("Projects"), icon: FolderKanban, page: "Projects" },
@@ -45,7 +45,12 @@ export default function Layout({ children, currentPageName }) {
     { name: "בני המשפחה", href: createPageUrl("Family"), icon: Users, page: "Family" },
   ];
 
-  const allNavigation = [...bottomTabItems, ...moreItems];
+  const moreItemsWithNotifications = [
+    { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
+    ...moreItems
+  ];
+
+  const allNavigation = [...bottomTabItems, ...moreItemsWithNotifications];
 
   return (
     <div dir="rtl" className="min-h-screen bg-background dark:bg-slate-900">

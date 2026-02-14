@@ -39,6 +39,7 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   const moreItems = [
+    { name: "ניתוח נתונים", href: createPageUrl("Analytics"), icon: TrendingUp, page: "Analytics" },
     { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
     { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health" },
     { name: "תקציב וכלכלה", href: createPageUrl("Budget"), icon: Wallet, page: "Budget" },

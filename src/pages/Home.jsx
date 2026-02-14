@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import AIInsightsPanel from "@/components/AIInsightsPanel";
 import BudgetOverview from "@/components/BudgetOverview";
+import MealSuggestions from "@/components/MealSuggestions";
+import FinancialDashboard from "@/components/FinancialDashboard";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -140,6 +142,12 @@ export default function Home() {
           </Button>
         </Link>
       </div>
+
+      {/* Financial Dashboard */}
+      <FinancialDashboard />
+
+      {/* Meal Suggestions */}
+      <MealSuggestions />
 
       {/* Budget Overview */}
       <BudgetOverview compact />

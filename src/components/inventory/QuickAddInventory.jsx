@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import VoiceInput from "@/components/VoiceInput";
 import { Plus, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,14 @@ export default function QuickAddInventory({ onAdd }) {
     setCustomName("");
   };
 
+  const handleVoiceResult = (text) => {
+    // Parse voice input like "הוסף חלב" or just "חלב"
+    const cleanText = text.replace(/הוסף|תוסיף|להוסיף/gi, '').trim();
+    if (cleanText) {
+      setCustomName(cleanText);
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
       <div className="flex items-center gap-2 mb-3">
@@ -58,6 +67,7 @@ export default function QuickAddInventory({ onAdd }) {
           placeholder="שם הפריט..."
           className="flex-1 bg-white dark:bg-slate-800"
         />
+        <VoiceInput onResult={handleVoiceResult} placeholder="אמור שם פריט..." />
         <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4" />
         </Button>

@@ -32,7 +32,10 @@ import {
   PartyPopper,
   Stethoscope,
   MoreHorizontal,
-  Repeat
+  Repeat,
+  RefreshCw,
+  Upload,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -113,6 +116,21 @@ export default function FamilyCalendar() {
     mutationFn: (id) => base44.entities.CalendarEvent.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["events"] })
   });
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncGoogleCalendar = async (direction) => {
+    setIsSyncing(true);
+    try {
+      const response = await base44.functions.invoke('syncGoogleCalendar', { direction });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      alert(response.data.message);
+    } catch (error) {
+      alert('שגיאה בסנכרון');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const resetForm = () => {
     setShowDialog(false);
@@ -227,8 +245,32 @@ export default function FamilyCalendar() {
       <PageHeader
         title="יומן משפחתי"
         subtitle={format(currentMonth, "MMMM yyyy", { locale: he })}
-        action={() => openAddEvent(selectedDate)}
-        actionLabel="אירוע חדש"
+        action={
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncGoogleCalendar('import')}
+              disabled={isSyncing}
+            >
+              <Download className="w-4 h-4 ml-1" />
+              ייבא
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncGoogleCalendar('export')}
+              disabled={isSyncing}
+            >
+              <Upload className="w-4 h-4 ml-1" />
+              ייצא
+            </Button>
+            <Button onClick={() => openAddEvent(selectedDate)}>
+              <Plus className="w-4 h-4 ml-1" />
+              אירוע חדש
+            </Button>
+          </div>
+        }
       />
 
       <div className="grid lg:grid-cols-3 gap-6">

@@ -63,6 +63,7 @@ import app from './pages/_app';
 import AIReports from './pages/AIReports';
 import NotificationSettings from './pages/NotificationSettings';
 import Health from './pages/Health';
+import Budget from './pages/Budget';
 import __Layout from './Layout.jsx';
 
 
@@ -83,6 +84,7 @@ export const PAGES = {
     "AIReports": AIReports,
     "NotificationSettings": NotificationSettings,
     "Health": Health,
+    "Budget": Budget,
 }
 
 export const pagesConfig = {

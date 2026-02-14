@@ -18,7 +18,8 @@ import {
                   MoreHorizontal,
                   Sparkles,
                   Bell,
-                  Heart
+                  Heart,
+                  Wallet
                 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -38,6 +39,7 @@ export default function Layout({ children, currentPageName }) {
   const moreItems = [
     { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
     { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health" },
+    { name: "תקציב וכלכלה", href: createPageUrl("Budget"), icon: Wallet, page: "Budget" },
     { name: "דוחות AI", href: createPageUrl("AIReports"), icon: Sparkles, page: "AIReports" },
     { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },

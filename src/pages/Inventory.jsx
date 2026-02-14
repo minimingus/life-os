@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Edit } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import PageHeader from "@/components/ui/PageHeader";
 import InventoryAnalytics from "@/components/InventoryAnalytics";
+import InventoryCard from "@/components/inventory/InventoryCard";
+import InventoryFilters from "@/components/inventory/InventoryFilters";
+import QuickAddInventory from "@/components/inventory/QuickAddInventory";
 import EmptyState from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +97,9 @@ export default function Inventory() {
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receiptResult, setReceiptResult] = useState(null);
   const [dismissedOutOfStockAlert, setDismissedOutOfStockAlert] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [viewMode, setViewMode] = useState("grid");
   const [formData, setFormData] = useState({
     name: "",
     category: "other",
@@ -386,40 +392,73 @@ export default function Inventory() {
     setFormData({ ...formData, tags: formData.tags.filter(t => t !== tagToRemove) });
   };
 
-  let filteredItems = filterLocation === "all"
-    ? items
-    : items.filter(i => i.location === filterLocation);
-  
-  if (showStaplesOnly) {
-    filteredItems = filteredItems.filter(i => i.is_staple);
-  }
+  // Filter and search logic
+  const { availableItems, missingItems, displayItems } = useMemo(() => {
+    let filtered = items;
 
-  if (showMissingOnly) {
-    filteredItems = filteredItems.filter(i => 
+    // Search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(i => 
+        i.name.toLowerCase().includes(query) ||
+        i.tags?.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    // Location filter
+    if (filterLocation !== "all") {
+      filtered = filtered.filter(i => i.location === filterLocation);
+    }
+
+    // Staples filter
+    if (showStaplesOnly) {
+      filtered = filtered.filter(i => i.is_staple);
+    }
+
+    // Badge filters
+    if (activeFilter === "lowStaples") {
+      filtered = filtered.filter(i => i.is_staple && (i.status === "low" || i.status === "out_of_stock"));
+    } else if (activeFilter === "expired") {
+      filtered = filtered.filter(i => i.status === "expired");
+    } else if (activeFilter === "low") {
+      filtered = filtered.filter(i => i.status === "low");
+    }
+
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name, 'he');
+        case "quantity":
+          return (b.quantity || 0) - (a.quantity || 0);
+        case "expiry":
+          if (!a.expiry_date && !b.expiry_date) return 0;
+          if (!a.expiry_date) return 1;
+          if (!b.expiry_date) return -1;
+          return new Date(a.expiry_date) - new Date(b.expiry_date);
+        case "status":
+          const statusOrder = { out_of_stock: 0, expired: 1, low: 2, ok: 3 };
+          return (statusOrder[a.status] || 999) - (statusOrder[b.status] || 999);
+        default:
+          return 0;
+      }
+    });
+
+    const available = filtered.filter(i => 
+      i.status !== "out_of_stock" && 
+      !(i.status === "low" && (i.min_quantity || 0) > 1)
+    );
+    const missing = filtered.filter(i => 
       i.status === "out_of_stock" || 
       (i.status === "low" && (i.min_quantity || 0) > 1)
     );
-  }
 
-  // Apply active filter from badges
-  if (activeFilter === "lowStaples") {
-    filteredItems = filteredItems.filter(i => i.is_staple && (i.status === "low" || i.status === "out_of_stock"));
-  } else if (activeFilter === "expired") {
-    filteredItems = filteredItems.filter(i => i.status === "expired");
-  } else if (activeFilter === "low") {
-    filteredItems = filteredItems.filter(i => i.status === "low");
-  }
-
-  // Split items by availability
-  const availableItems = filteredItems.filter(i => 
-    i.status !== "out_of_stock" && 
-    !(i.status === "low" && (i.min_quantity || 0) > 1)
-  );
-  const missingItems = filteredItems.filter(i => 
-    i.status === "out_of_stock" || 
-    (i.status === "low" && (i.min_quantity || 0) > 1)
-  );
-  const displayItems = activeTab === "available" ? availableItems : missingItems;
+    return {
+      availableItems: available,
+      missingItems: missing,
+      displayItems: activeTab === "available" ? available : activeTab === "missing" ? missing : filtered
+    };
+  }, [items, searchQuery, filterLocation, showStaplesOnly, activeFilter, sortBy, activeTab]);
 
   const getExpiryInfo = (date) => {
     if (!date) return null;
@@ -453,32 +492,22 @@ export default function Inventory() {
     <div className="space-y-6">
       <PageHeader
         title="מלאי בבית"
-        subtitle={`${items.length} פריטים במלאי`}
-        action={() => setShowDialog(true)}
-        actionLabel="הוסף פריט"
+        subtitle={`${items.length} פריטים • ${availableItems.length} זמינים • ${missingItems.length} חוסרים`}
+        action={{
+          label: "פריט חדש",
+          icon: Plus,
+          onClick: () => setShowDialog(true)
+        }}
       >
         <Button
           variant="outline"
-          onClick={() => setShowSettings(!showSettings)}
-          className="border-slate-200 hover:bg-slate-50"
-        >
-          🔔 התראות
-        </Button>
-        <Button
-          variant="outline"
           onClick={() => setShowReceiptDialog(true)}
-          className="border-blue-200 text-blue-600 hover:bg-blue-50"
+          className="border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
         >
           <FileUp className="w-4 h-4 ml-2" />
           העלה חשבונית
         </Button>
       </PageHeader>
-
-      {showSettings && (
-        <div className="mb-6">
-          <NotificationSettingsPanel />
-        </div>
-      )}
 
       {/* Out of Stock Alert - CRITICAL */}
       {outOfStockCount > 0 && !dismissedOutOfStockAlert && (
@@ -512,80 +541,67 @@ export default function Inventory() {
 
       {/* Alert Badges */}
       {(expiredCount > 0 || lowCount > 0 || lowStapleCount > 0) && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {lowStapleCount > 0 && (
-            <Badge 
-              className={cn(
-                "bg-orange-500 cursor-pointer hover:bg-orange-600 transition-colors",
-                activeFilter === "lowStaples" && "ring-2 ring-orange-300 ring-offset-2"
-              )}
+            <button
               onClick={() => setActiveFilter(activeFilter === "lowStaples" ? null : "lowStaples")}
+              className={cn(
+                "px-4 py-2 rounded-xl font-medium text-sm transition-all shadow-sm flex items-center gap-2 min-h-[44px]",
+                "bg-orange-500 hover:bg-orange-600 text-white",
+                activeFilter === "lowStaples" && "ring-2 ring-orange-300 dark:ring-orange-700 ring-offset-2 scale-105"
+              )}
             >
-              <Star className="w-3 h-3 ml-1" />
-              {lowStapleCount} פריטים בסיסיים נגמרים
-            </Badge>
+              <Star className="w-4 h-4 fill-current" />
+              {lowStapleCount} בסיסיים נגמרים
+            </button>
           )}
           {expiredCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className={cn(
-                "bg-rose-500 cursor-pointer hover:bg-rose-600 transition-colors",
-                activeFilter === "expired" && "ring-2 ring-rose-300 ring-offset-2"
-              )}
+            <button
               onClick={() => setActiveFilter(activeFilter === "expired" ? null : "expired")}
+              className={cn(
+                "px-4 py-2 rounded-xl font-medium text-sm transition-all shadow-sm flex items-center gap-2 min-h-[44px]",
+                "bg-red-500 hover:bg-red-600 text-white",
+                activeFilter === "expired" && "ring-2 ring-red-300 dark:ring-red-700 ring-offset-2 scale-105"
+              )}
             >
-              <AlertTriangle className="w-3 h-3 ml-1" />
-              {expiredCount} פריטים פגי תוקף
-            </Badge>
+              <AlertTriangle className="w-4 h-4" />
+              {expiredCount} פגי תוקף
+            </button>
           )}
           {lowCount > 0 && (
-            <Badge 
-              className={cn(
-                "bg-amber-500 cursor-pointer hover:bg-amber-600 transition-colors",
-                activeFilter === "low" && "ring-2 ring-amber-300 ring-offset-2"
-              )}
+            <button
               onClick={() => setActiveFilter(activeFilter === "low" ? null : "low")}
+              className={cn(
+                "px-4 py-2 rounded-xl font-medium text-sm transition-all shadow-sm flex items-center gap-2 min-h-[44px]",
+                "bg-amber-500 hover:bg-amber-600 text-white",
+                activeFilter === "low" && "ring-2 ring-amber-300 dark:ring-amber-700 ring-offset-2 scale-105"
+              )}
             >
-              <AlertTriangle className="w-3 h-3 ml-1" />
-              {lowCount} פריטים במלאי נמוך
-            </Badge>
+              <AlertTriangle className="w-4 h-4" />
+              {lowCount} מלאי נמוך
+            </button>
           )}
         </div>
       )}
 
-      {/* Location Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={filterLocation === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterLocation("all")}
-          className={filterLocation === "all" ? "bg-blue-500" : ""}
-        >
-          הכל
-        </Button>
-        {Object.entries(LOCATIONS).map(([key, { label, icon: Icon }]) => (
-          <Button
-            key={key}
-            variant={filterLocation === key ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterLocation(key)}
-            className={filterLocation === key ? "bg-blue-500" : ""}
-          >
-            <Icon className="w-4 h-4 ml-1" />
-            {label}
-          </Button>
-        ))}
-        <div className="h-8 w-px bg-slate-200 mx-1" />
-        <Button
-          variant={showStaplesOnly ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowStaplesOnly(!showStaplesOnly)}
-          className={showStaplesOnly ? "bg-amber-500 hover:bg-amber-600" : ""}
-        >
-          <Star className="w-4 h-4 ml-1" />
-          פריטים בסיסיים ({stapleCount})
-        </Button>
-      </div>
+      {/* Quick Add */}
+      <QuickAddInventory onAdd={(data) => createMutation.mutate(data)} />
+
+      {/* Filters */}
+      <InventoryFilters
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filterLocation={filterLocation}
+        onLocationChange={setFilterLocation}
+        showStaplesOnly={showStaplesOnly}
+        onStaplesToggle={() => setShowStaplesOnly(!showStaplesOnly)}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        locations={LOCATIONS}
+        stapleCount={stapleCount}
+      />
 
       {items.length === 0 && !isLoading ? (
         <EmptyState
@@ -616,301 +632,73 @@ export default function Inventory() {
                 description="כל הפריטים נגמרו או במלאי נמוך"
               />
             ) : (
-              <div className="space-y-3">
-                {Object.entries(CATEGORIES).map(([catKey, catData]) => {
-                  const categoryItems = availableItems.filter(i => i.category === catKey);
-                  if (categoryItems.length === 0) return null;
+              <div className={cn(
+                viewMode === "grid" 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                  : "space-y-3"
+              )}>
+                {availableItems.map(item => {
+                  const cat = CATEGORIES[item.category] || CATEGORIES.other;
+                  const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
                   
                   return (
-                    <div key={catKey}>
-                      <div className="flex items-center gap-2 px-1 pb-2">
-                        <div className={cn("w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0", catData.color)}>
-                          <Package className="w-2.5 h-2.5" />
-                        </div>
-                        <span className="font-semibold text-slate-700 text-xs">{catData.label}</span>
-                        <Badge variant="outline" className="text-xs h-4 px-1">{categoryItems.length}</Badge>
-                      </div>
-                      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden mb-3">
-                        {categoryItems.map(item => {
-                          const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
-                          const LocationIcon = loc.icon;
-                          const expiryInfo = getExpiryInfo(item.expiry_date);
-
-                          const cat = CATEGORIES[item.category] || CATEGORIES.other;
-                          const CategoryIcon = cat.icon || Package;
-
-                          return (
-                           <div 
-                             key={item.id}
-                             className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-0"
-                             onClick={() => openEdit(item)}
-                           >
-                             {/* Category Icon */}
-                             <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0", cat.color)}>
-                               <CategoryIcon className="w-4 h-4" />
-                             </div>
-
-                             {/* Details */}
-                             <div className="flex-1 min-w-0">
-                               <h4 className="font-semibold text-slate-900 text-sm">{item.name}</h4>
-                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                 <span className="text-xs text-slate-500">
-                                   {item.quantity} {UNITS[item.unit]} • {loc.label}
-                                 </span>
-                                 {item.is_staple && (
-                                   <>
-                                     <span className="text-slate-300">•</span>
-                                     <span className="text-xs text-amber-600 font-medium">בסיסי</span>
-                                   </>
-                                 )}
-                                 {expiryInfo && (
-                                   <>
-                                     <span className="text-slate-300">•</span>
-                                     <span className={cn("text-xs font-medium", expiryInfo.color.replace("bg-", "").split(" ")[0])}>
-                                       {expiryInfo.text}
-                                     </span>
-                                   </>
-                                 )}
-                                 {item.status === "expired" && (
-                                   <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                     פג תוקף
-                                   </Badge>
-                                 )}
-                                 {item.status === "low" && (
-                                   <Badge className="bg-orange-100 text-orange-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                     מלאי נמוך
-                                   </Badge>
-                                 )}
-                               </div>
-                             </div>
-
-                              {/* Compact Actions */}
-                              <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 w-7 rounded-md p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateQuantity(item, -1);
-                                  }}
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 w-7 rounded-md p-0 border-green-300 text-green-600 hover:bg-green-50"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateQuantity(item, 1);
-                                  }}
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </Button>
-                                <div className="w-px h-6 bg-slate-200 mx-0.5" />
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    markAsFinished(item);
-                                  }}
-                                  className="h-7 w-7 rounded-md p-0 text-red-500 hover:bg-red-50"
-                                  title="נגמר"
-                                >
-                                  <AlertTriangle className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    addToShoppingList(item);
-                                  }}
-                                  className="h-7 w-7 rounded-md p-0 text-blue-500 hover:bg-blue-50"
-                                  title="הוסף לרשימה"
-                                >
-                                  <ShoppingCart className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <InventoryCard
+                      key={item.id}
+                      item={item}
+                      categoryConfig={cat}
+                      locationConfig={loc}
+                      onEdit={openEdit}
+                      onDelete={(item) => deleteMutation.mutate(item.id)}
+                      onUpdateQuantity={updateQuantity}
+                      onMarkFinished={markAsFinished}
+                      onAddToShopping={addToShoppingList}
+                    />
                   );
                 })}
               </div>
             )}
           </TabsContent>
-          <TabsContent value="missing" className="mt-6">
-            {missingItems.length === 0 ? (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="available">
+              זמין ({availableItems.length})
+            </TabsTrigger>
+            <TabsTrigger value="missing">
+              חוסרים ({missingItems.length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics">
+              ניתוח
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="available" className="mt-6">
+            {availableItems.length === 0 ? (
               <EmptyState
                 icon={Package}
-                title="אין חוסרים"
-                description="כל הפריטים זמינים"
+                title="אין פריטים זמינים"
+                description="כל הפריטים נגמרו או במלאי נמוך"
               />
             ) : (
-              <div className="space-y-3">
-                {Object.entries(CATEGORIES).map(([catKey, catData]) => {
-                  const categoryItems = missingItems.filter(i => i.category === catKey);
-                  if (categoryItems.length === 0) return null;
+              <div className={cn(
+                viewMode === "grid" 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                  : "space-y-3"
+              )}>
+                {availableItems.map(item => {
+                  const cat = CATEGORIES[item.category] || CATEGORIES.other;
+                  const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
                   
                   return (
-                    <div key={catKey}>
-                      <div className="flex items-center gap-2 px-1 pb-2">
-                        <div className={cn("w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0", catData.color)}>
-                          <Package className="w-2.5 h-2.5" />
-                        </div>
-                        <span className="font-semibold text-red-900 text-xs">{catData.label}</span>
-                        <Badge className="bg-red-600 text-[10px] h-4 px-1">{categoryItems.length}</Badge>
-                      </div>
-                      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden mb-3">
-                        {categoryItems.map(item => {
-                          const loc = LOCATIONS[item.location] || LOCATIONS.fridge;
-                          const LocationIcon = loc.icon;
-                          const expiryInfo = getExpiryInfo(item.expiry_date);
-
-                          const cat = CATEGORIES[item.category] || CATEGORIES.other;
-                          const CategoryIcon = cat.icon || Package;
-
-                          return (
-                           <div 
-                             key={item.id}
-                             className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100 last:border-0"
-                             onClick={() => openEdit(item)}
-                           >
-                             {/* Category Icon */}
-                             <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0", cat.color)}>
-                               <CategoryIcon className="w-4 h-4" />
-                             </div>
-
-                             {/* Details */}
-                             <div className="flex-1 min-w-0">
-                               <h4 className="font-semibold text-slate-900 text-sm">{item.name}</h4>
-                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                 <span className="text-xs text-slate-500">
-                                   {loc.label}
-                                 </span>
-                                 {item.is_staple && (
-                                   <>
-                                     <span className="text-slate-300">•</span>
-                                     <span className="text-xs text-amber-600 font-medium">בסיסי</span>
-                                   </>
-                                 )}
-                                 {item.status === "out_of_stock" && (
-                                   <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                     נגמר במלאי
-                                   </Badge>
-                                 )}
-                                 {item.status === "expired" && (
-                                   <Badge className="bg-red-100 text-red-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                     פג תוקף
-                                   </Badge>
-                                 )}
-                                 {item.status === "low" && (
-                                   <Badge className="bg-orange-100 text-orange-600 border-0 text-[10px] px-1.5 py-0 h-4">
-                                     <AlertTriangle className="w-2.5 h-2.5 ml-0.5" />
-                                     מלאי נמוך
-                                   </Badge>
-                                 )}
-                                 {expiryInfo && (
-                                   <span className={cn("text-xs", expiryInfo.color.replace("bg-", "").split(" ")[0])}>
-                                     {expiryInfo.text}
-                                   </span>
-                                 )}
-                               </div>
-                             </div>
-
-                              {/* Compact Actions */}
-                              <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                                {item.status === "out_of_stock" ? (
-                                  <>
-                                    <Button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateQuantity(item, 1);
-                                      }}
-                                      className="h-7 px-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md text-xs"
-                                    >
-                                      <CheckCircle2 className="w-3 h-3 ml-1" />
-                                      חזר מלאי
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        addToShoppingList(item);
-                                      }}
-                                      className="h-7 w-7 rounded-md p-0 text-blue-500 hover:bg-blue-50"
-                                      title="הוסף לרשימה"
-                                    >
-                                      <ShoppingCart className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 w-7 rounded-md p-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateQuantity(item, -1);
-                                      }}
-                                    >
-                                      <Minus className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 w-7 rounded-md p-0 border-green-300 text-green-600 hover:bg-green-50"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateQuantity(item, 1);
-                                      }}
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                    </Button>
-                                    <div className="w-px h-6 bg-slate-200 mx-0.5" />
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        markAsFinished(item);
-                                      }}
-                                      className="h-7 w-7 rounded-md p-0 text-red-500 hover:bg-red-50"
-                                      title="נגמר"
-                                    >
-                                      <AlertTriangle className="w-3.5 h-3.5" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        addToShoppingList(item);
-                                      }}
-                                      className="h-7 w-7 rounded-md p-0 text-blue-500 hover:bg-blue-50"
-                                      title="הוסף לרשימה"
-                                    >
-                                      <ShoppingCart className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <InventoryCard
+                      key={item.id}
+                      item={item}
+                      categoryConfig={cat}
+                      locationConfig={loc}
+                      onEdit={openEdit}
+                      onDelete={(item) => deleteMutation.mutate(item.id)}
+                      onUpdateQuantity={updateQuantity}
+                      onMarkFinished={markAsFinished}
+                      onAddToShopping={addToShoppingList}
+                    />
                   );
                 })}
               </div>

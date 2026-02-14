@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { 
                   Home, 
                   ShoppingCart, 
@@ -21,7 +23,9 @@ import {
                   Heart,
                   Wallet,
                   GraduationCap,
-                  Search as SearchIcon
+                  Search as SearchIcon,
+                  TrendingUp,
+                  Settings
                 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -31,29 +35,53 @@ export default function Layout({ children, currentPageName }) {
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const location = useLocation();
 
-  const bottomTabItems = [
-    { name: "בית", href: createPageUrl("Home"), icon: Home, page: "Home" },
-    { name: "חיפוש", href: createPageUrl("Search"), icon: SearchIcon, page: "Search" },
-    { name: "משימות", href: createPageUrl("Tasks"), icon: ListTodo, page: "Tasks" },
-    { name: "קניות", href: createPageUrl("Shopping"), icon: ShoppingCart, page: "Shopping" },
+  const { data: moduleSettings } = useQuery({
+    queryKey: ["moduleSettings"],
+    queryFn: async () => {
+      const list = await base44.entities.ModuleSettings.list();
+      return list[0] || null;
+    }
+  });
+
+  const enabledModules = moduleSettings?.enabled_modules || [
+    "tasks", "shopping", "inventory", "repairs", "bills", "projects", 
+    "calendar", "family", "health", "budget", "education", "analytics", "ai", "notifications", "routine", "schedule"
   ];
 
-  const moreItems = [
-    { name: "ניתוח נתונים", href: createPageUrl("Analytics"), icon: TrendingUp, page: "Analytics" },
-    { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
-    { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health" },
-    { name: "תקציב וכלכלה", href: createPageUrl("Budget"), icon: Wallet, page: "Budget" },
-    { name: "חינוך ולמידה", href: createPageUrl("Education"), icon: GraduationCap, page: "Education" },
-    { name: "דוחות AI", href: createPageUrl("AIReports"), icon: Sparkles, page: "AIReports" },
-    { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings" },
-    { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },
-    { name: "אחזקת בית", href: createPageUrl("Repairs"), icon: Wrench, page: "Repairs" },
-    { name: "פרויקטים", href: createPageUrl("Projects"), icon: FolderKanban, page: "Projects" },
-    { name: "חשבונות", href: createPageUrl("Bills"), icon: Receipt, page: "Bills" },
-    { name: "לוז משפחתי", href: createPageUrl("FamilyRoutine"), icon: Clock, page: "FamilyRoutine" },
-    { name: "מערכת שעות", href: createPageUrl("SchoolSchedule"), icon: Calendar, page: "SchoolSchedule" },
-    { name: "בני המשפחה", href: createPageUrl("Family"), icon: Users, page: "Family" },
+  const isModuleEnabled = (moduleId) => enabledModules.includes(moduleId);
+
+  const allBottomTabItems = [
+    { name: "בית", href: createPageUrl("Home"), icon: Home, page: "Home", moduleId: null },
+    { name: "חיפוש", href: createPageUrl("Search"), icon: SearchIcon, page: "Search", moduleId: null },
+    { name: "משימות", href: createPageUrl("Tasks"), icon: ListTodo, page: "Tasks", moduleId: "tasks" },
+    { name: "קניות", href: createPageUrl("Shopping"), icon: ShoppingCart, page: "Shopping", moduleId: "shopping" },
   ];
+
+  const bottomTabItems = allBottomTabItems.filter(item => 
+    !item.moduleId || isModuleEnabled(item.moduleId)
+  );
+
+  const allMoreItems = [
+    { name: "ניתוח נתונים", href: createPageUrl("Analytics"), icon: TrendingUp, page: "Analytics", moduleId: "analytics" },
+    { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings", moduleId: "notifications" },
+    { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health", moduleId: "health" },
+    { name: "תקציב וכלכלה", href: createPageUrl("Budget"), icon: Wallet, page: "Budget", moduleId: "budget" },
+    { name: "חינוך ולמידה", href: createPageUrl("Education"), icon: GraduationCap, page: "Education", moduleId: "education" },
+    { name: "דוחות AI", href: createPageUrl("AIReports"), icon: Sparkles, page: "AIReports", moduleId: "ai" },
+    { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings", moduleId: "ai" },
+    { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar", moduleId: "calendar" },
+    { name: "אחזקת בית", href: createPageUrl("Repairs"), icon: Wrench, page: "Repairs", moduleId: "repairs" },
+    { name: "פרויקטים", href: createPageUrl("Projects"), icon: FolderKanban, page: "Projects", moduleId: "projects" },
+    { name: "חשבונות", href: createPageUrl("Bills"), icon: Receipt, page: "Bills", moduleId: "bills" },
+    { name: "לוז משפחתי", href: createPageUrl("FamilyRoutine"), icon: Clock, page: "FamilyRoutine", moduleId: "routine" },
+    { name: "מערכת שעות", href: createPageUrl("SchoolSchedule"), icon: Calendar, page: "SchoolSchedule", moduleId: "schedule" },
+    { name: "בני המשפחה", href: createPageUrl("Family"), icon: Users, page: "Family", moduleId: "family" },
+    { name: "הגדרות מודולים", href: createPageUrl("Settings"), icon: Settings, page: "Settings", moduleId: null },
+  ];
+
+  const moreItems = allMoreItems.filter(item => 
+    !item.moduleId || isModuleEnabled(item.moduleId)
+  );
 
   const allNavigation = [...bottomTabItems, ...moreItems];
 

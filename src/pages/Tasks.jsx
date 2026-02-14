@@ -29,11 +29,14 @@ import {
   Filter,
   Repeat,
   X,
-  MessageSquare
+  MessageSquare,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isToday, isTomorrow, isThisWeek, addDays, addWeeks, addMonths, addYears, startOfWeek } from "date-fns";
 import { he } from "date-fns/locale";
+import SubTasksList from "@/components/SubTasksList";
+import RecurringTaskTemplates from "@/components/RecurringTaskTemplates";
 
 const PRIORITY_COLORS = {
   1: "text-red-600",
@@ -294,8 +297,10 @@ export default function Tasks() {
   };
 
   // Organize tasks by sections
-  const activeTasks = tasks.filter(t => t.status !== "completed");
-  const completedTasks = tasks.filter(t => t.status === "completed");
+  // Filter out subtasks from main lists
+  const mainTasks = tasks.filter(t => !t.parent_task_id);
+  const activeTasks = mainTasks.filter(t => t.status !== "completed");
+  const completedTasks = mainTasks.filter(t => t.status === "completed");
 
   const todayTasks = activeTasks.filter(t => 
     t.due_date && isToday(parseISO(t.due_date))
@@ -525,13 +530,15 @@ export default function Tasks() {
           ) : (
             <div className="space-y-1">
               {displayTasks.map(task => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggle={() => toggleComplete(task)}
-                  onEdit={() => openEdit(task)}
-                  onDelete={() => deleteMutation.mutate(task.id)}
-                />
+                <div key={task.id}>
+                  <TaskItem
+                    task={task}
+                    onToggle={() => toggleComplete(task)}
+                    onEdit={() => openEdit(task)}
+                    onDelete={() => deleteMutation.mutate(task.id)}
+                  />
+                  <SubTasksList parentTask={task} allTasks={tasks} />
+                </div>
               ))}
             </div>
           )}
@@ -642,7 +649,7 @@ export default function Tasks() {
             </div>
 
             <div>
-              <label className="text-xs text-slate-600 mb-1 block">אחראי</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">אחראי</label>
               <Select
                 value={formData.assigned_to_id}
                 onValueChange={(v) => {
@@ -654,21 +661,32 @@ export default function Tasks() {
                   });
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white dark:bg-slate-800">
                   <SelectValue placeholder="בחר בן משפחה" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={null}>ללא אחראי</SelectItem>
                   {members.map(member => (
                     <SelectItem key={member.id} value={member.id}>
                       {member.name}
+                      {member.role && (
+                        <span className="text-xs text-slate-500 mr-2">
+                          ({member.role === "parent" ? "הורה" : "ילד"})
+                        </span>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {formData.assigned_to_name && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  משימה זו מוקצית ל-{formData.assigned_to_name}
+                </p>
+              )}
             </div>
 
-            <div className="border-t pt-4">
-              <label className="text-xs text-slate-600 mb-2 block">סוג משימה</label>
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+              <label className="text-xs text-slate-600 dark:text-slate-400 mb-2 block">סוג משימה</label>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
@@ -676,8 +694,8 @@ export default function Tasks() {
                   className={cn(
                     "py-3 px-4 rounded-lg border-2 transition-all text-sm font-medium",
                     !formData.is_recurring
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
                   )}
                 >
                   <Circle className="w-4 h-4 mx-auto mb-1" />
@@ -689,8 +707,8 @@ export default function Tasks() {
                   className={cn(
                     "py-3 px-4 rounded-lg border-2 transition-all text-sm font-medium",
                     formData.is_recurring
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
                   )}
                 >
                   <Repeat className="w-4 h-4 mx-auto mb-1" />
@@ -699,57 +717,80 @@ export default function Tasks() {
               </div>
 
               {formData.is_recurring && (
-                <div className="space-y-3 pr-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-slate-600 mb-1 block">תבנית</label>
-                      <Select
-                        value={formData.recurrence_pattern}
-                        onValueChange={(v) => setFormData({ ...formData, recurrence_pattern: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(RECURRENCE_PATTERNS).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-600 mb-1 block">כל</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={formData.recurrence_interval}
-                        onChange={(e) => setFormData({ ...formData, recurrence_interval: parseInt(e.target.value) })}
-                      />
-                    </div>
-                  </div>
-
-                  {formData.recurrence_pattern === "weekly" && (
-                    <div>
-                      <label className="text-xs text-slate-600 mb-2 block">ימים</label>
-                      <div className="flex gap-1">
-                        {WEEKDAYS.map(day => (
-                          <button
-                            key={day.value}
-                            type="button"
-                            onClick={() => toggleRecurrenceDay(day.value)}
-                            className={cn(
-                              "flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-all",
-                              formData.recurrence_days?.includes(day.value)
-                                ? "border-blue-500 bg-blue-50 text-blue-700"
-                                : "border-slate-200 text-slate-600 hover:border-slate-300"
-                            )}
-                          >
-                            {day.label}
-                          </button>
-                        ))}
+                <div className="space-y-4">
+                  <RecurringTaskTemplates
+                    onSelect={(config) => setFormData({ 
+                      ...formData, 
+                      ...config,
+                      is_recurring: true
+                    })}
+                  />
+                  
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">תבנית</label>
+                        <Select
+                          value={formData.recurrence_pattern}
+                          onValueChange={(v) => setFormData({ ...formData, recurrence_pattern: v })}
+                        >
+                          <SelectTrigger className="bg-white dark:bg-slate-800">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(RECURRENCE_PATTERNS).map(([key, label]) => (
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">
+                          כל {formData.recurrence_interval || 1} {
+                            formData.recurrence_pattern === "daily" ? "ימים" :
+                            formData.recurrence_pattern === "weekly" ? "שבועות" :
+                            formData.recurrence_pattern === "monthly" ? "חודשים" : "שנים"
+                          }
+                        </label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={formData.recurrence_interval}
+                          onChange={(e) => setFormData({ ...formData, recurrence_interval: parseInt(e.target.value) || 1 })}
+                          className="bg-white dark:bg-slate-800"
+                        />
                       </div>
                     </div>
-                  )}
+
+                    {formData.recurrence_pattern === "weekly" && (
+                      <div>
+                        <label className="text-xs text-slate-600 dark:text-slate-400 mb-2 block">ימים בשבוע</label>
+                        <div className="flex gap-1">
+                          {WEEKDAYS.map(day => (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => toggleRecurrenceDay(day.value)}
+                              className={cn(
+                                "flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-all",
+                                formData.recurrence_days?.includes(day.value)
+                                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                                  : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
+                              )}
+                            >
+                              {day.label}
+                            </button>
+                          ))}
+                        </div>
+                        {formData.recurrence_days?.length === 0 && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            בחר לפחות יום אחד לחזרה
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -827,9 +868,9 @@ function TaskItem({ task, onToggle, onEdit, onDelete }) {
   return (
     <div
       className={cn(
-        "group flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer border border-transparent",
+        "group flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-pointer border border-transparent",
         task.status === "completed" && "opacity-50",
-        isOverdue && "bg-red-50/50"
+        isOverdue && "bg-red-50/50 dark:bg-red-900/20"
       )}
       onClick={onEdit}
     >
@@ -858,23 +899,25 @@ function TaskItem({ task, onToggle, onEdit, onDelete }) {
       </button>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <p className={cn(
             "text-sm font-medium",
-            task.status === "completed" ? "line-through text-slate-500" : "text-slate-900"
+            task.status === "completed" 
+              ? "line-through text-slate-500 dark:text-slate-400" 
+              : "text-slate-900 dark:text-slate-100"
           )}>
             {task.title}
           </p>
           {task.is_recurring && (
-            <Repeat className="w-3 h-3 text-slate-400" />
+            <Repeat className="w-3 h-3 text-blue-500 dark:text-blue-400" />
           )}
         </div>
 
         {task.description && (
-          <p className="text-xs text-slate-500 mt-0.5">{task.description}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{task.description}</p>
         )}
 
-        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
+        <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
           {task.due_date && (
             <span className={cn(
               "flex items-center gap-1",
@@ -892,10 +935,13 @@ function TaskItem({ task, onToggle, onEdit, onDelete }) {
             </span>
           )}
           {task.assigned_to_name && (
-            <span>@{task.assigned_to_name}</span>
+            <span className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+              <ChevronRight className="w-3 h-3" />
+              {task.assigned_to_name}
+            </span>
           )}
           {task.completion_note && (
-            <span className="flex items-center gap-1 text-green-600">
+            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
               <MessageSquare className="w-3 h-3" />
               {task.completion_note}
             </span>

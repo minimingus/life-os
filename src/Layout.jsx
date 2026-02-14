@@ -33,6 +33,7 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   const moreItems = [
+    { name: "התראות AI", href: createPageUrl("AISettings"), icon: Sparkles, page: "AISettings" },
     { name: "יומן משפחתי", href: createPageUrl("FamilyCalendar"), icon: Calendar, page: "FamilyCalendar" },
     { name: "אחזקת בית", href: createPageUrl("Repairs"), icon: Wrench, page: "Repairs" },
     { name: "פרויקטים", href: createPageUrl("Projects"), icon: FolderKanban, page: "Projects" },

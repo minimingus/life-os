@@ -59,6 +59,7 @@ import SchoolSchedule from './pages/SchoolSchedule';
 import Shopping from './pages/Shopping';
 import Tasks from './pages/Tasks';
 import app from './pages/_app';
+import AISettings from './pages/AISettings';
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +76,7 @@ export const PAGES = {
     "Shopping": Shopping,
     "Tasks": Tasks,
     "_app": app,
+    "AISettings": AISettings,
 }
 
 export const pagesConfig = {

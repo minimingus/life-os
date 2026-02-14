@@ -22,6 +22,8 @@ import StatCard from "@/components/ui/StatCard";
 import QuickAction from "@/components/ui/QuickAction";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import AIInsightsPanel from "@/components/AIInsightsPanel";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { data: shoppingItems = [], isLoading: loadingShopping } = useQuery({
@@ -52,6 +54,14 @@ export default function Home() {
   const { data: events = [], isLoading: loadingEvents } = useQuery({
     queryKey: ["events"],
     queryFn: () => base44.entities.CalendarEvent.list()
+  });
+
+  const { data: insights = [] } = useQuery({
+    queryKey: ["ai-insights"],
+    queryFn: async () => {
+      const all = await base44.entities.AIInsight.list('-created_date');
+      return all.filter(i => !i.is_dismissed);
+    }
   });
 
   const isLoading = loadingShopping || loadingInventory || loadingRepairs || loadingProjects || loadingBills || loadingEvents;
@@ -113,32 +123,56 @@ export default function Home() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">
-          שלום! 👋
-        </h1>
-        <p className="text-slate-500 mt-1">
-          {format(today, "EEEE, d בMMMM", { locale: he })}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-slate-800 dark:text-slate-100">
+            שלום! 👋
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
+            {format(today, "EEEE, d בMMMM", { locale: he })}
+          </p>
+        </div>
+        <Link to={createPageUrl("AISettings")}>
+          <Button variant="outline" size="sm" className="gap-2">
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">הגדרות AI</span>
+          </Button>
+        </Link>
       </div>
+
+      {/* AI Insights */}
+      {insights.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+              <h2 className="font-semibold text-slate-800 dark:text-slate-100">התראות חכמות</h2>
+              <Badge className="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                {insights.length}
+              </Badge>
+            </div>
+          </div>
+          <AIInsightsPanel compact />
+        </div>
+      )}
 
       {/* Urgent Alerts */}
       {urgentItems.length > 0 && (
-        <div className="bg-gradient-to-l from-rose-50 to-orange-50 rounded-2xl p-5 border border-rose-100">
+        <div className="bg-gradient-to-l from-rose-50 to-orange-50 dark:from-rose-950/20 dark:to-orange-950/20 rounded-2xl p-5 border border-rose-100 dark:border-rose-900/30">
           <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-5 h-5 text-rose-500" />
-            <h2 className="font-semibold text-slate-800">דורש תשומת לב</h2>
+            <AlertTriangle className="w-5 h-5 text-rose-500 dark:text-rose-400" />
+            <h2 className="font-semibold text-slate-800 dark:text-slate-100">דורש תשומת לב</h2>
           </div>
           <div className="space-y-2">
             {urgentItems.map((item, idx) => (
               <Link
                 key={idx}
                 to={item.href}
-                className="flex items-center gap-3 p-3 bg-white/80 rounded-xl hover:bg-white transition-colors"
+                className="flex items-center gap-3 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors"
               >
                 <item.icon className={`w-4 h-4 ${item.color}`} />
-                <span className="text-sm text-slate-700">{item.title}</span>
-                <ArrowLeft className="w-4 h-4 text-slate-300 mr-auto" />
+                <span className="text-sm text-slate-700 dark:text-slate-300">{item.title}</span>
+                <ArrowLeft className="w-4 h-4 text-slate-300 dark:text-slate-600 mr-auto" />
               </Link>
             ))}
           </div>

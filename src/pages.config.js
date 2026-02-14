@@ -47,6 +47,7 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AISettings from './pages/AISettings';
 import Bills from './pages/Bills';
 import Family from './pages/Family';
 import FamilyCalendar from './pages/FamilyCalendar';
@@ -59,11 +60,12 @@ import SchoolSchedule from './pages/SchoolSchedule';
 import Shopping from './pages/Shopping';
 import Tasks from './pages/Tasks';
 import app from './pages/_app';
-import AISettings from './pages/AISettings';
+import AIReports from './pages/AIReports';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AISettings": AISettings,
     "Bills": Bills,
     "Family": Family,
     "FamilyCalendar": FamilyCalendar,
@@ -76,7 +78,7 @@ export const PAGES = {
     "Shopping": Shopping,
     "Tasks": Tasks,
     "_app": app,
-    "AISettings": AISettings,
+    "AIReports": AIReports,
 }
 
 export const pagesConfig = {

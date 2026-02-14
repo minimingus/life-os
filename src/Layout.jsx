@@ -47,6 +47,7 @@ export default function Layout({ children, currentPageName }) {
 
   const moreItemsWithNotifications = [
     { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings" },
+    { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health" },
     ...moreItems
   ];
 

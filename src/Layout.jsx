@@ -2,25 +2,31 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { 
-              Home, 
-              ShoppingCart, 
-              Package, 
-              Wrench, 
-              FolderKanban, 
-              Receipt, 
-              Calendar, 
-              Users,
-              Menu,
-              X,
-              ChevronLeft,
-              Clock,
-              ListTodo
-            } from "lucide-react";
+                  Home, 
+                  ShoppingCart, 
+                  Package, 
+                  Wrench, 
+                  FolderKanban, 
+                  Receipt, 
+                  Calendar, 
+                  Users,
+                  Menu,
+                  X,
+                  ChevronLeft,
+                  Clock,
+                  ListTodo,
+                  Moon,
+                  Sun
+                } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
+import BottomTabBar from "./components/BottomTabBar";
+import PageTransition from "./components/PageTransition";
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
 
   const navigation = [
     { name: "דף הבית", href: createPageUrl("Home"), icon: Home, page: "Home" },
@@ -37,27 +43,30 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
-      <style>{`
-        :root {
-          --primary: 215 80% 45%;
-          --primary-light: 215 85% 55%;
-          --accent: 165 80% 40%;
-          --warm: 35 90% 55%;
-        }
-      `}</style>
-
+    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 right-0 left-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+      <header 
+        className="lg:hidden fixed top-0 right-0 left-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-700"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
         <div className="flex items-center justify-between px-4 h-16">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
           >
-            <Menu className="w-6 h-6 text-slate-700" />
+            <Menu className="w-6 h-6 text-slate-700 dark:text-slate-300" />
           </button>
-          <h1 className="text-lg font-semibold text-slate-800">ניהול הבית</h1>
-          <div className="w-10" />
+          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">ניהול הבית</h1>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-5 h-5 text-slate-300" />
+            ) : (
+              <Moon className="w-5 h-5 text-slate-700" />
+            )}
+          </button>
         </div>
       </header>
 
@@ -71,28 +80,40 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 right-0 h-full z-50 w-72 bg-white shadow-2xl shadow-slate-200/50 transition-transform duration-300 lg:translate-x-0",
+        "fixed top-0 right-0 h-full z-50 w-72 bg-white dark:bg-slate-900 shadow-2xl shadow-slate-200/50 dark:shadow-slate-950/50 transition-transform duration-300 lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-slate-100">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                   <Home className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-slate-800">ניהול הבית</h1>
-                  <p className="text-xs text-slate-500">הכל במקום אחד</p>
+                  <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">ניהול הבית</h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">הכל במקום אחד</p>
                 </div>
               </div>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="w-5 h-5 text-slate-300" />
+                  ) : (
+                    <Moon className="w-5 h-5 text-slate-500" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="lg:hidden p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none"
+                >
+                  <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -106,15 +127,15 @@ export default function Layout({ children, currentPageName }) {
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group select-none",
                     isActive 
                       ? "bg-gradient-to-l from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30" 
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                   )}
                 >
                   <item.icon className={cn(
                     "w-5 h-5 transition-transform group-hover:scale-110",
-                    isActive ? "text-white" : "text-slate-400 group-hover:text-blue-500"
+                    isActive ? "text-white" : "text-slate-400 dark:text-slate-500 group-hover:text-blue-500 dark:group-hover:text-blue-400"
                   )} />
                   <span className="font-medium">{item.name}</span>
                   {isActive && (
@@ -126,21 +147,26 @@ export default function Layout({ children, currentPageName }) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-slate-100">
-            <div className="px-4 py-3 rounded-xl bg-gradient-to-l from-blue-50 to-indigo-50">
-              <p className="text-xs text-slate-500">משפחת</p>
-              <p className="text-sm font-semibold text-slate-700">אברמוביץ 👨‍👩‍👧‍👦</p>
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="px-4 py-3 rounded-xl bg-gradient-to-l from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+              <p className="text-xs text-slate-500 dark:text-slate-400">משפחת</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">אברמוביץ 👨‍👩‍👧‍👦</p>
             </div>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="lg:mr-72 min-h-screen">
+      <main className="lg:mr-72 min-h-screen pb-20 lg:pb-8">
         <div className="pt-20 lg:pt-8 pb-8 px-4 lg:px-8">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </div>
       </main>
+
+      {/* Bottom Tab Bar */}
+      <BottomTabBar navigation={navigation} />
     </div>
   );
 }

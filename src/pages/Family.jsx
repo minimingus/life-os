@@ -10,7 +10,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -31,7 +43,10 @@ import {
   GraduationCap,
   Dumbbell,
   X,
-  Plus
+  Plus,
+  Settings,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInYears } from "date-fns";
@@ -62,6 +77,7 @@ export default function Family() {
   const [showMemberView, setShowMemberView] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [editItem, setEditItem] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     role: "child",
@@ -198,6 +214,12 @@ export default function Family() {
   const parents = members.filter(m => m.role === "parent");
   const children = members.filter(m => m.role === "child");
 
+  const handleDeleteAccount = async () => {
+    // Placeholder for actual account deletion logic
+    alert("פונקציונליות מחיקת חשבון תבוצע כאן. יש ליצור קשר עם התמיכה.");
+    setShowDeleteConfirm(false);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -260,6 +282,68 @@ export default function Family() {
           )}
         </div>
       )}
+
+      {/* Account Settings */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Settings className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">הגדרות חשבון</h2>
+        </div>
+        <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-rose-900 dark:text-rose-100">מחיקת חשבון</h3>
+              <p className="text-sm text-rose-700 dark:text-rose-300 mt-1">
+                פעולה זו תמחק את כל הנתונים שלך ולא ניתן לשחזרה
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="mt-3 bg-rose-600 hover:bg-rose-700"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                מחק חשבון
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Account Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+              <AlertTriangle className="w-5 h-5" />
+              האם אתה בטוח?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              פעולה זו תמחק לצמיתות את החשבון שלך ואת כל הנתונים הקשורים אליו, כולל:
+              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                <li>כל המשימות והפרויקטים</li>
+                <li>רשימות קניות ומלאי</li>
+                <li>משימות אחזקה וחשבונות</li>
+                <li>לוח השנה ומערכת השעות</li>
+                <li>כל בני המשפחה והנתונים שלהם</li>
+              </ul>
+              <p className="mt-3 font-semibold text-rose-600 dark:text-rose-400">
+                לא ניתן לשחזר את הנתונים לאחר המחיקה!
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              className="bg-rose-600 hover:bg-rose-700"
+            >
+              כן, מחק את החשבון
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

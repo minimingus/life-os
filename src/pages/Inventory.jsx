@@ -3,6 +3,7 @@ import { Edit } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import PageHeader from "@/components/ui/PageHeader";
+import InventoryAnalytics from "@/components/InventoryAnalytics";
 import EmptyState from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -596,12 +597,15 @@ export default function Inventory() {
         />
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="available">
               מלאי זמין ({availableItems.length})
             </TabsTrigger>
             <TabsTrigger value="missing">
               חוסרים ({missingItems.length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics">
+              ניתוח וחיזוי
             </TabsTrigger>
           </TabsList>
           <TabsContent value="available" className="mt-6">
@@ -911,6 +915,10 @@ export default function Inventory() {
                 })}
               </div>
             )}
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="mt-6">
+            <InventoryAnalytics />
           </TabsContent>
         </Tabs>
       )}

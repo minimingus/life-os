@@ -108,7 +108,65 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Smart Shopping Suggestions
+    // 3. Inventory Prediction - Potential Shortages
+    if (settings.shopping_suggestions_enabled) {
+      const stapleItems = inventory.filter(i => i.is_staple);
+      const predictedShortages = [];
+
+      stapleItems.forEach(item => {
+        const optimalLevel = item.min_quantity || 5;
+        const currentLevel = item.quantity || 0;
+        
+        // Simple prediction: assume 15% of optimal level consumed per week for staples
+        const dailyConsumption = (optimalLevel * 0.15) / 7;
+        const daysUntilShortage = currentLevel > 0 ? Math.floor((currentLevel - item.min_quantity) / dailyConsumption) : 0;
+        
+        // Check if item is already in shopping list
+        const inShoppingList = shopping.some(s => 
+          s.inventory_item_id === item.id || 
+          s.name.toLowerCase() === item.name.toLowerCase()
+        );
+        
+        if (daysUntilShortage >= 0 && daysUntilShortage <= 7 && !inShoppingList) {
+          predictedShortages.push({
+            item,
+            daysUntilShortage,
+            dailyConsumption
+          });
+        }
+      });
+
+      if (predictedShortages.length > 0) {
+        const topShortages = predictedShortages.slice(0, 5);
+        insights.push({
+          type: "shopping_suggestion",
+          priority: "medium",
+          title: `${topShortages.length} פריטים צפויים להיגמר בשבוע הקרוב`,
+          description: `בהתבסס על דפוסי צריכה: ${topShortages.map(s => 
+            `${s.item.name} (${s.daysUntilShortage} ימים)`
+          ).join(', ')}`,
+          action_items: topShortages.map(s => ({
+            label: `הוסף ${s.item.name} לרשימה`,
+            action: "add_to_shopping",
+            data: {
+              item_name: s.item.name,
+              reason: `צפוי להיגמר בעוד ${s.daysUntilShortage} ימים`
+            }
+          })),
+          related_data: {
+            predicted_shortages: topShortages.map(s => ({
+              name: s.item.name,
+              current_quantity: s.item.quantity,
+              days_until_shortage: s.daysUntilShortage,
+              daily_consumption: Math.round(s.dailyConsumption * 10) / 10
+            }))
+          },
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+      }
+    }
+
+    // 4. Smart Shopping Suggestions
     if (settings.shopping_suggestions_enabled) {
       const prompt = `
         נתח את נתוני המלאי והקניות הבאים והצע המלצות חכמות לקניות:

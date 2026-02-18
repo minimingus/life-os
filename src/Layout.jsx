@@ -25,7 +25,9 @@ import {
                   GraduationCap,
                   Search as SearchIcon,
                   TrendingUp,
-                  Settings
+                  Settings,
+                  ChefHat,
+                  Palette
                 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -62,6 +64,9 @@ export default function Layout({ children, currentPageName }) {
   );
 
   const allMoreItems = [
+    { name: "מתכונים", href: createPageUrl("Recipes"), icon: ChefHat, page: "Recipes", moduleId: "recipes" },
+    { name: "תחביבים", href: createPageUrl("Hobbies"), icon: Palette, page: "Hobbies", moduleId: "hobbies" },
+    { name: "מלאי", href: createPageUrl("Inventory"), icon: Package, page: "Inventory", moduleId: "inventory" },
     { name: "ניתוח נתונים", href: createPageUrl("Analytics"), icon: TrendingUp, page: "Analytics", moduleId: "analytics" },
     { name: "הגדרות התראות", href: createPageUrl("NotificationSettings"), icon: Bell, page: "NotificationSettings", moduleId: "notifications" },
     { name: "בריאות המשפחה", href: createPageUrl("Health"), icon: Heart, page: "Health", moduleId: "health" },

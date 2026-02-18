@@ -49,8 +49,10 @@
  */
 import AIReports from './pages/AIReports';
 import AISettings from './pages/AISettings';
+import Analytics from './pages/Analytics';
 import Bills from './pages/Bills';
 import Budget from './pages/Budget';
+import Education from './pages/Education';
 import Family from './pages/Family';
 import FamilyCalendar from './pages/FamilyCalendar';
 import FamilyRoutine from './pages/FamilyRoutine';
@@ -61,21 +63,23 @@ import NotificationSettings from './pages/NotificationSettings';
 import Projects from './pages/Projects';
 import Repairs from './pages/Repairs';
 import SchoolSchedule from './pages/SchoolSchedule';
+import Search from './pages/Search';
+import Settings from './pages/Settings';
 import Shopping from './pages/Shopping';
 import Tasks from './pages/Tasks';
 import app from './pages/_app';
-import Education from './pages/Education';
-import Search from './pages/Search';
-import Analytics from './pages/Analytics';
-import Settings from './pages/Settings';
+import Recipes from './pages/Recipes';
+import Hobbies from './pages/Hobbies';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AIReports": AIReports,
     "AISettings": AISettings,
+    "Analytics": Analytics,
     "Bills": Bills,
     "Budget": Budget,
+    "Education": Education,
     "Family": Family,
     "FamilyCalendar": FamilyCalendar,
     "FamilyRoutine": FamilyRoutine,
@@ -86,13 +90,13 @@ export const PAGES = {
     "Projects": Projects,
     "Repairs": Repairs,
     "SchoolSchedule": SchoolSchedule,
+    "Search": Search,
+    "Settings": Settings,
     "Shopping": Shopping,
     "Tasks": Tasks,
     "_app": app,
-    "Education": Education,
-    "Search": Search,
-    "Analytics": Analytics,
-    "Settings": Settings,
+    "Recipes": Recipes,
+    "Hobbies": Hobbies,
 }
 
 export const pagesConfig = {
